@@ -8,4 +8,7 @@ namespace OrganizadorDePasta_2._0.Models;
 
 public class RegrasOrganizacao
 {
+    public string Nome { get; set; } = string.Empty;
+
+    public List<string> Extensoes { get; set; } = new();
 }
