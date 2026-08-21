@@ -7,6 +7,10 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-
+        <Button
+    Content="Organizar Downloads"
+    Click="OrganizarDownloads_Click"
+    Width="200"
+    Height="40"/>
     </Grid>
 </Window>
