@@ -8,20 +8,20 @@ public class ConfiguracaoService
 {
     public Configuracao CarregarConfiguracao()
     {
-        // Ler todo conteudo do arquivo
-        var json = File.ReadAllText
-            ("D:\\repositorios\\c#\\OrganizadorDePasta-2.0\\OrganizadorDePasta-2.0\\config.json");
+        // Obtém o diretório onde a aplicação está sendo executada.
+        var caminhoConfig = Path.Combine(
+            AppContext.BaseDirectory,
+            "config.json");
 
-        // Desserializa o JSON de volta para o objeto 
+        // Lê todo o conteúdo do arquivo JSON.
+        var json = File.ReadAllText(caminhoConfig);
+
         // Converte o JSON para o objeto Configuracao.
-        // PropertyNameCaseInsensitive permite que:
-        // "regras" seja associado a "Regras"
-        // "nome" seja associado a "Nome"
-        // "extensoes" seja associado a "Extensoes"
         var objeto = JsonSerializer.Deserialize<Configuracao>(
             json,
             new JsonSerializerOptions
             {
+                // Permite "regras" no JSON corresponder a "Regras" no C#.
                 PropertyNameCaseInsensitive = true
             });
 
