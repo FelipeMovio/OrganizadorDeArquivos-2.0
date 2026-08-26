@@ -9,10 +9,21 @@ public class ConfiguracaoService
     public Configuracao CarregarConfiguracao()
     {
         // Ler todo conteudo do arquivo
-        var json = File.ReadAllText("config.json");
+        var json = File.ReadAllText
+            ("D:\\repositorios\\c#\\OrganizadorDePasta-2.0\\OrganizadorDePasta-2.0\\config.json");
 
         // Desserializa o JSON de volta para o objeto 
-        var objeto = JsonSerializer.Deserialize<Configuracao>(json);
+        // Converte o JSON para o objeto Configuracao.
+        // PropertyNameCaseInsensitive permite que:
+        // "regras" seja associado a "Regras"
+        // "nome" seja associado a "Nome"
+        // "extensoes" seja associado a "Extensoes"
+        var objeto = JsonSerializer.Deserialize<Configuracao>(
+            json,
+            new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
 
         //O ! é o null-forgiving operator. Estamos dizendo ao compilador
         //Neste ponto, eu estou assumindo que esse objeto não será null

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Windows;
+using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Service;
 
 namespace OrganizadorDePasta_2._0;
@@ -22,8 +23,18 @@ public partial class MainWindow : Window
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             "Downloads");
 
+        ConfiguracaoService configuracaoService = new ConfiguracaoService();
+
+        Configuracao configuracao = configuracaoService.CarregarConfiguracao();
+
+       // MessageBox.Show(
+       //    $"Configuração carregada!\n" +
+       //    $"Quantidade de regras: {configuracao.Regras.Count}"
+       //); teste de regras 
+
+
         // Cria uma instância do serviço responsável pela organização.
-        var organizador = new OrganizadorService();
+        var organizador = new OrganizadorService(configuracao);
 
         // Inicia o processo de organização da pasta informada.
         organizador.OrganizarPasta(pastaTeste);
