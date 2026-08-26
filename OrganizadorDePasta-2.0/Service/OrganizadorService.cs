@@ -118,11 +118,10 @@ public class OrganizadorService
         // Procura entre as regras uma que aceite a extensão encontrada.
         var regra = EncontrarRegra(extensao);
 
-        // Se nenhuma regra for encontrada, o arquivo não será movido.
-        if (regra is null)
-        {
-            return;
-        }
+        // Se nenhuma regra for encontrada,
+        // o arquivo será enviado para a pasta "Outros".
+        var nomePastaDestino = regra?.Nome ?? "Outros";
+
         // Obtém o diretório onde o arquivo está atualmente.
         var pastaOrigem = Path.GetDirectoryName(caminhoArquivo)!;
 
@@ -132,7 +131,7 @@ public class OrganizadorService
         // → C:\OrganizadorTeste\Imagens
         var pastaDestino = Path.Combine(
             pastaOrigem,
-            regra.Nome);
+            nomePastaDestino);
 
         // Cria a pasta de destino caso ela ainda não exista.
         Directory.CreateDirectory(pastaDestino);
