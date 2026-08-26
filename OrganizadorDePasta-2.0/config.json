@@ -1,0 +1,40 @@
+{
+  "regras": [
+    {
+      "nome": "Imagens",
+      "extensoes": [
+        ".jpg",
+        ".jpeg",
+        ".png",
+        ".gif",
+        ".webp"
+      ]
+    },
+    {
+      "nome": "Documentos",
+      "extensoes": [
+        ".pdf",
+        ".doc",
+        ".docx",
+        ".txt"
+      ]
+    },
+    {
+      "nome": "Videos",
+      "extensoes": [
+        ".mp4",
+        ".avi",
+        ".mkv",
+        ".mov"
+      ]
+    },
+    {
+      "nome": "Compactados",
+      "extensoes": [
+        ".zip",
+        ".rar",
+        ".7z"
+      ]
+    }
+  ]
+}

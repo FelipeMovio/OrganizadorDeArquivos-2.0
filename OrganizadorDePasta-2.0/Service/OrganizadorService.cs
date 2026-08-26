@@ -21,71 +21,10 @@ public class OrganizadorService
     // o que ajuda a deixar o código mais seguro e previsível
     private readonly List<RegrasOrganizacao> _regras;
 
-    public OrganizadorService()
+    public OrganizadorService(Configuracao configuracao)
     {
-        // Inicialmente as regras são definidas diretamente no código.
-        // Na Branch 02, essas regras serão configuráveis pelo usuário.
-        _regras = new List<RegrasOrganizacao>
-        {
-            new RegrasOrganizacao
-            {
-                // Arquivos de imagem serão enviados para a pasta "Imagens".
-                Nome = "Imagens",
-                // Extensões consideradas como imagens.
-                Extensoes = new List<string>
-                {
-                    ".jpg",
-                    ".jpeg",
-                    ".png",
-                    ".gif",
-                    ".webp"
-                }
-            },
-
-            new RegrasOrganizacao
-            {
-                // Arquivos de imagem serão enviados para a pasta "Imagens".
-                Nome = "Documentos",
-
-                // Extensões consideradas como imagens.
-                Extensoes = new List<string>
-                {
-                    ".pdf",
-                    ".doc",
-                    ".docx",
-                    ".txt"
-                }
-            },
-
-            new RegrasOrganizacao
-            {
-                // Arquivos de imagem serão enviados para a pasta "Imagens".
-                Nome = "Videos",
-
-                // Extensões consideradas como imagens.
-                Extensoes = new List<string>
-                {
-                    ".mp4",
-                    ".avi",
-                    ".mkv",
-                    ".mov"
-                }
-            },
-
-            new RegrasOrganizacao
-            {
-                // Arquivos de imagem serão enviados para a pasta "Imagens".
-                Nome = "Compactados",
-
-                // Extensões consideradas como imagens.
-                Extensoes = new List<string>
-                {
-                    ".zip",
-                    ".rar",
-                    ".7z"
-                }
-            }
-        };
+        _regras = configuracao.Regras;
+        //Assim _regras passa a apontar para as regras carregadas do JSON.
     }
 
     public void OrganizarPasta(string caminhoPasta)
@@ -118,11 +57,10 @@ public class OrganizadorService
         // Procura entre as regras uma que aceite a extensão encontrada.
         var regra = EncontrarRegra(extensao);
 
-        // Se nenhuma regra for encontrada, o arquivo não será movido.
-        if (regra is null)
-        {
-            return;
-        }
+        // Se nenhuma regra for encontrada,
+        // o arquivo será enviado para a pasta "Outros".
+        var nomePastaDestino = regra?.Nome ?? "Outros";
+
         // Obtém o diretório onde o arquivo está atualmente.
         var pastaOrigem = Path.GetDirectoryName(caminhoArquivo)!;
 
@@ -132,7 +70,7 @@ public class OrganizadorService
         // → C:\OrganizadorTeste\Imagens
         var pastaDestino = Path.Combine(
             pastaOrigem,
-            regra.Nome);
+            nomePastaDestino);
 
         // Cria a pasta de destino caso ela ainda não exista.
         Directory.CreateDirectory(pastaDestino);
