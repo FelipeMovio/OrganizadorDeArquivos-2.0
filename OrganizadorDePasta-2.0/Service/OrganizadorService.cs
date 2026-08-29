@@ -47,7 +47,7 @@ public class OrganizadorService
         }
     }
 
-    private void OrganizarArquivo(string caminhoArquivo)
+    public void OrganizarArquivo(string caminhoArquivo)
     {
 
         // Descobre a extensão do arquivo, por exemplo:

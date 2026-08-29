@@ -7,6 +7,7 @@ namespace OrganizadorDePasta_2._0.Service;
 public class MonitoramentoService
 {
     private readonly FileSystemWatcher _watcher;
+                                       // ver/monitorar
 
     public MonitoramentoService(OrganizadorService organizadorService)
     {
