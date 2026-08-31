@@ -16,11 +16,6 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        InitializeComponent();
-
-        var pastaTeste = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-            "Downloads");
 
         ConfiguracaoService configuracaoService =
             new ConfiguracaoService();

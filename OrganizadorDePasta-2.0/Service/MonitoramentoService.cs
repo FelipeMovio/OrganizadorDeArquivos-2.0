@@ -24,9 +24,37 @@ public class MonitoramentoService
         _watcher.Created += (sender, e) =>
         {
             //MessageBox.Show($"Novo arquivo detectado: {e.FullPath}");
-            _organizadorService.OrganizarArquivo(e.FullPath);
+            OrganizarComRetry(e.FullPath);
         };
 
         _watcher.EnableRaisingEvents = true;
+    }
+
+    private void OrganizarComRetry(string caminhoArquivo)
+    {
+        const int maxTentativas = 8;
+        const int tempoEspera = 500;
+
+        for (int tentativa = 1; tentativa <= maxTentativas; tentativa++)
+        {
+            try
+            {
+                _organizadorService.OrganizarArquivo(caminhoArquivo);
+
+                return;
+            }
+            catch (IOException)
+            {
+                if (tentativa == maxTentativas)
+                {
+                    Console.WriteLine(
+                        $"Não foi possível organizar o arquivo: {caminhoArquivo}");
+
+                    return;
+                }
+
+                Thread.Sleep(tempoEspera);
+            }
+        }
     }
 }
