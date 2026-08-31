@@ -5,12 +5,13 @@ using System.Windows;
 
 namespace OrganizadorDePasta_2._0.Service;
 
-public class MonitoramentoService
+public class MonitoramentoService : IDisposable
 {
     private readonly FileSystemWatcher _watcher;
                                        // ver/monitorar
                                       
     private readonly OrganizadorService _organizadorService;
+    private readonly HashSet<string> _arquivosProcessando = new();
 
     public MonitoramentoService(OrganizadorService organizadorService)
     {
@@ -24,7 +25,21 @@ public class MonitoramentoService
         _watcher.Created += (sender, e) =>
         {
             //MessageBox.Show($"Novo arquivo detectado: {e.FullPath}");
-            OrganizarComRetry(e.FullPath);
+
+
+            if (!_arquivosProcessando.Add(e.FullPath))
+            {
+                return;
+            }
+
+            try
+            {
+                OrganizarComRetry(e.FullPath);
+            }
+            finally
+            {
+                _arquivosProcessando.Remove(e.FullPath);
+            }
         };
 
         _watcher.EnableRaisingEvents = true;
@@ -57,4 +72,13 @@ public class MonitoramentoService
             }
         }
     }
+
+    public void Dispose()
+    {
+        _watcher.EnableRaisingEvents = false;
+        _watcher.Dispose();
+    }
+
+
+
 }

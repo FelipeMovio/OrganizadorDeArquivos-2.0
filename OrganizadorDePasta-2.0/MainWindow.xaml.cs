@@ -39,4 +39,11 @@ public partial class MainWindow : Window
         _organizador.OrganizarPasta(pastaTeste);
 
     }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        _monitoramento.Dispose();
+
+        base.OnClosed(e);
+    }
 }
