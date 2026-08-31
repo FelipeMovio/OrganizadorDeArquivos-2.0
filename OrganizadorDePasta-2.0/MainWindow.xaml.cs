@@ -10,38 +10,38 @@ namespace OrganizadorDePasta_2._0;
 // A interface será estruturada corretamente com MVVM em uma etapa futura.
 public partial class MainWindow : Window
 {
+
+    private readonly OrganizadorService _organizador;
+    private readonly MonitoramentoService _monitoramento;
     public MainWindow()
     {
         InitializeComponent();
-    }
+        InitializeComponent();
 
-    private void OrganizarDownloads_Click(object sender, RoutedEventArgs e)
-    {
-        // Pasta utilizada durante o desenvolvimento para evitar
-        // alterações acidentais na pasta Downloads real do usuário.
         var pastaTeste = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
             "Downloads");
 
-        ConfiguracaoService configuracaoService = new ConfiguracaoService();
+        ConfiguracaoService configuracaoService =
+            new ConfiguracaoService();
 
-        Configuracao configuracao = configuracaoService.CarregarConfiguracao();
+        Configuracao configuracao =
+            configuracaoService.CarregarConfiguracao();
 
-       // MessageBox.Show(
-       //    $"Configuração carregada!\n" +
-       //    $"Quantidade de regras: {configuracao.Regras.Count}"
-       //); teste de regras 
+        _organizador =
+            new OrganizadorService(configuracao);
 
+        _monitoramento =
+            new MonitoramentoService(_organizador);
+    }
 
-        // Cria uma instância do serviço responsável pela organização.
-        var organizador = new OrganizadorService(configuracao);
+    private void OrganizarDownloads_Click(object sender, RoutedEventArgs e)
+    {
+        var pastaTeste = Path.Combine(
+           Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+           "Downloads");
 
-        // Inicia o processo de organização da pasta informada.
-        organizador.OrganizarPasta(pastaTeste);
-
-        MonitoramentoService monitoramento =
-    new MonitoramentoService(organizador);
-
+        _organizador.OrganizarPasta(pastaTeste);
 
     }
 }
