@@ -1,5 +1,6 @@
 ﻿
 using System.IO;
+using System.Windows;
 
 
 namespace OrganizadorDePasta_2._0.Service;
@@ -19,7 +20,7 @@ public class MonitoramentoService
 
         _watcher.Created += (sender, e) =>
         {
-            Console.WriteLine($"Novo arquivo detectado: {e.FullPath}");
+            MessageBox.Show($"Novo arquivo detectado: {e.FullPath}");
         };
 
         _watcher.EnableRaisingEvents = true;

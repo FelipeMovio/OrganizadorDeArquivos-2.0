@@ -38,5 +38,10 @@ public partial class MainWindow : Window
 
         // Inicia o processo de organização da pasta informada.
         organizador.OrganizarPasta(pastaTeste);
+
+        MonitoramentoService monitoramento =
+    new MonitoramentoService(organizador);
+
+
     }
 }
