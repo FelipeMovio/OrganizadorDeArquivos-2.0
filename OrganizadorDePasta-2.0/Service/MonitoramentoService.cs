@@ -13,9 +13,15 @@ public class MonitoramentoService
     {
         _watcher = new FileSystemWatcher();
 
+        string caminhoPasta = @"C:\Users\felip\Downloads";
+
+        _watcher.Path = caminhoPasta;
+
         _watcher.Created += (sender, e) =>
         {
             Console.WriteLine($"Novo arquivo detectado: {e.FullPath}");
         };
+
+        _watcher.EnableRaisingEvents = true;
     }
 }
