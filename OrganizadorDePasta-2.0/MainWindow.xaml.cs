@@ -5,38 +5,91 @@ using OrganizadorDePasta_2._0.Service;
 
 namespace OrganizadorDePasta_2._0;
 
-// Atualmente o WPF está sendo utilizado apenas como ponto de entrada
+// Atualmente o WPF está sendo utilizado como ponto de entrada
 // temporário para testar o núcleo da aplicação.
-// A interface será estruturada corretamente com MVVM em uma etapa futura.
+//
+// Em uma fase futura a interface poderá ser estruturada
+// utilizando MVVM.
 public partial class MainWindow : Window
 {
+    // Serviço responsável pela organização dos arquivos.
+    private readonly OrganizadorService _organizador;
+
+    // Serviço responsável pelo monitoramento da pasta.
+    private readonly MonitoramentoService _monitoramento;
+
+
     public MainWindow()
     {
         InitializeComponent();
+
+
+        // Cria o serviço responsável por carregar
+        // as configurações da aplicação.
+        ConfiguracaoService configuracaoService =
+            new ConfiguracaoService();
+
+
+        // Carrega as regras do arquivo de configuração.
+        Configuracao configuracao =
+            configuracaoService.CarregarConfiguracao();
+
+
+        // Cria o serviço responsável por organizar
+        // os arquivos.
+        _organizador =
+            new OrganizadorService(configuracao);
+
+
+        // Cria o serviço de monitoramento.
+        //
+        // A partir deste momento o FileSystemWatcher
+        // começa a observar a pasta Downloads.
+        _monitoramento =
+            new MonitoramentoService(_organizador);
     }
 
-    private void OrganizarDownloads_Click(object sender, RoutedEventArgs e)
+
+    // ============================================================
+    // ORGANIZAÇÃO MANUAL
+    // ============================================================
+
+    private void OrganizarDownloads_Click(
+        object sender,
+        RoutedEventArgs e)
     {
-        // Pasta utilizada durante o desenvolvimento para evitar
-        // alterações acidentais na pasta Downloads real do usuário.
+        // Obtém o caminho da pasta Downloads
+        // do usuário atual.
         var pastaTeste = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.UserProfile),
             "Downloads");
 
-        ConfiguracaoService configuracaoService = new ConfiguracaoService();
 
-        Configuracao configuracao = configuracaoService.CarregarConfiguracao();
+        // Organiza os arquivos que já estavam
+        // na pasta.
+        //
+        // Isso continua existindo porque o monitoramento
+        // trabalha principalmente com arquivos novos.
+        _organizador.OrganizarPasta(pastaTeste);
+    }
 
-       // MessageBox.Show(
-       //    $"Configuração carregada!\n" +
-       //    $"Quantidade de regras: {configuracao.Regras.Count}"
-       //); teste de regras 
+
+    // ============================================================
+    // ENCERRAMENTO DA APLICAÇÃO
+    // ============================================================
+
+    protected override void OnClosed(EventArgs e)
+    {
+        // Quando a janela for fechada,
+        // encerramos o FileSystemWatcher.
+        //
+        // Isso evita deixar recursos abertos.
+        _monitoramento.Dispose();
 
 
-        // Cria uma instância do serviço responsável pela organização.
-        var organizador = new OrganizadorService(configuracao);
-
-        // Inicia o processo de organização da pasta informada.
-        organizador.OrganizarPasta(pastaTeste);
+        // Continua o processo normal de fechamento
+        // da janela WPF.
+        base.OnClosed(e);
     }
 }

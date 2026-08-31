@@ -47,7 +47,7 @@ public class OrganizadorService
         }
     }
 
-    private void OrganizarArquivo(string caminhoArquivo)
+    public void OrganizarArquivo(string caminhoArquivo)
     {
 
         // Descobre a extensão do arquivo, por exemplo:
@@ -86,6 +86,8 @@ public class OrganizadorService
             pastaDestino,
             nomeArquivo);
 
+        destino = ObterCaminhoDisponivel(destino);
+
         // Move o arquivo da pasta original para a pasta de destino.
         File.Move(caminhoArquivo, destino);
     }
@@ -96,5 +98,36 @@ public class OrganizadorService
         // contenha a extensão do arquivo
         return _regras.FirstOrDefault(regra =>
             regra.Extensoes.Contains(extensao));
+    }
+   
+
+    private string ObterCaminhoDisponivel(string caminhoDestino)
+    {
+        if (!File.Exists(caminhoDestino))
+        {
+            return caminhoDestino;
+        }
+
+        var pasta = Path.GetDirectoryName(caminhoDestino)!;
+        var nomeSemExtensao = Path.GetFileNameWithoutExtension(caminhoDestino);
+        var extensao = Path.GetExtension(caminhoDestino);
+
+        int contador = 1;
+
+        while (true)
+        {
+            var novoNome = $"{nomeSemExtensao} ({contador}){extensao}";
+
+            var novoCaminho = Path.Combine(
+                pasta,
+                novoNome);
+
+            if (!File.Exists(novoCaminho))
+            {
+                return novoCaminho;
+            }
+
+            contador++;
+        }
     }
 }
