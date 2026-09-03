@@ -11,14 +11,6 @@ using System.IO;
 
 public class OrganizadorService
 {
-    // Contém as regras utilizadas para decidir
-    // em qual pasta cada arquivo será colocado.
-
-    // readonly é um modificador aplicado a campos de uma classe ou estrutura.
-    // Ele garante que o valor do campo só pode ser definido
-    // na sua declaração ou dentro do construtor. Depois disso,
-    // o valor não pode mais ser alterado,
-    // o que ajuda a deixar o código mais seguro e previsível
     private readonly List<RegrasOrganizacao> _regras;
 
     public OrganizadorService(Configuracao configuracao)

@@ -1,16 +1,71 @@
 ﻿<Window x:Class="OrganizadorDePasta_2._0.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:OrganizadorDePasta_2._0"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="Organizador de Pasta"
+        Height="450"
+        Width="700">
+
+    <Grid Margin="30">
+
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+
+        <!-- Título -->
+
+        <TextBlock
+            Grid.Row="0"
+            Text="Organizador de Pasta"
+            FontSize="28"
+            FontWeight="Bold"
+            HorizontalAlignment="Center"
+            Margin="0,0,0,30"/>
+
+
+        <!-- Pasta monitorada -->
+
+        <StackPanel Grid.Row="1">
+
+            <TextBlock
+                Text="Pasta monitorada"
+                FontSize="16"
+                FontWeight="SemiBold"/>
+
+            <TextBox
+                x:Name="PastaMonitoradaTextBox"
+                Margin="0,8,0,0"
+                Height="35"
+                IsReadOnly="True"/>
+
+        </StackPanel>
+
+
+        <!-- Status -->
+
+        <TextBlock
+            Grid.Row="2"
+            x:Name="StatusTextBlock"
+            Text="🟢 Monitoramento ativo"
+            FontSize="16"
+            HorizontalAlignment="Center"
+            Margin="0,25,0,25"/>
+
+
+        <!-- Botão -->
+
         <Button
-    Content="Organizar Downloads"
-    Click="OrganizarDownloads_Click"
-    Width="200"
-    Height="40"/>
+            Grid.Row="3"
+            Content="Organizar agora"
+            Width="180"
+            Height="45"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Click="OrganizarDownloads_Click"/>
+
     </Grid>
+
 </Window>
