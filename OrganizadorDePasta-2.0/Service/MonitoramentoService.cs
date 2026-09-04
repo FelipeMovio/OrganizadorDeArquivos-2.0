@@ -9,22 +9,12 @@ public class MonitoramentoService : IDisposable
     private readonly FileSystemWatcher _watcher;
 
     // Serviço que contém a lógica de organização dos arquivos.
-    // O MonitoramentoService não organiza o arquivo diretamente.
-    // Ele apenas detecta o arquivo e delega essa responsabilidade
-    // para o OrganizadorService.
     private readonly OrganizadorService _organizadorService;
 
     // Guarda os arquivos que já estão sendo processados.
-    //
-    // Isso evita que dois eventos diferentes tentem organizar
-    // o mesmo arquivo ao mesmo tempo.
     private readonly HashSet<string> _arquivosProcessando = new();
 
     // Objeto utilizado para controlar o acesso ao HashSet.
-    //
-    // Como os eventos do FileSystemWatcher podem ocorrer
-    // em threads diferentes, precisamos proteger o acesso
-    // à coleção.
     private readonly object _lock = new();
 
     // Quantidade máxima de tentativas para organizar um arquivo.
@@ -34,39 +24,32 @@ public class MonitoramentoService : IDisposable
     private const int TempoEspera = 1000;
 
     // Pasta que será monitorada.
-    //
-    // Por enquanto está fixa porque estamos desenvolvendo
-    // a funcionalidade.
-    //
-    // Em uma fase futura podemos colocar isso em configuração.
-    private const string CaminhoPasta =
-        @"C:\Users\felip\Downloads";
+    private readonly string _caminhoPasta;
 
 
     public MonitoramentoService(
-        OrganizadorService organizadorService)
+        OrganizadorService organizadorService,
+        string caminhoPasta)
     {
-        // Guarda a referência do serviço responsável
-        // pela organização dos arquivos.
+        // Guarda o serviço responsável pela organização.
         _organizadorService = organizadorService;
 
+        // Guarda a pasta que será monitorada.
+        _caminhoPasta = caminhoPasta;
+
+        if (!Directory.Exists(_caminhoPasta))
+        {
+            throw new DirectoryNotFoundException(
+                $"A pasta monitorada não existe: {_caminhoPasta}");
+        }
 
         // Cria o FileSystemWatcher.
         _watcher = new FileSystemWatcher
         {
             // Define qual pasta será monitorada.
-            Path = CaminhoPasta,
+            Path = _caminhoPasta,
 
             // Define quais alterações queremos observar.
-            //
-            // FileName:
-            // Detecta criação/renomeação de arquivos.
-            //
-            // LastWrite:
-            // Detecta alterações no conteúdo.
-            //
-            // Size:
-            // Detecta alterações no tamanho.
             NotifyFilter =
                 NotifyFilters.FileName |
                 NotifyFilters.LastWrite |
@@ -81,15 +64,6 @@ public class MonitoramentoService : IDisposable
 
         // Quando um arquivo for renomeado,
         // o método ArquivoRenomeado será executado.
-        //
-        // Isso é importante para downloads de navegadores,
-        // que podem passar de:
-        //
-        // arquivo.zip.crdownload
-        //
-        // para:
-        //
-        // arquivo.zip
         _watcher.Renamed += ArquivoRenomeado;
 
 
@@ -103,7 +77,7 @@ public class MonitoramentoService : IDisposable
 
 
         Debug.WriteLine(
-            $"[MONITORAMENTO] Iniciado: {CaminhoPasta}");
+            $"[MONITORAMENTO] Iniciado: {_caminhoPasta}");
     }
 
 

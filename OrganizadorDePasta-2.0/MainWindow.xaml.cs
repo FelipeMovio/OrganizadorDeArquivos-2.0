@@ -5,11 +5,6 @@ using OrganizadorDePasta_2._0.Service;
 
 namespace OrganizadorDePasta_2._0;
 
-// Atualmente o WPF está sendo utilizado como ponto de entrada
-// temporário para testar o núcleo da aplicação.
-//
-// Em uma fase futura a interface poderá ser estruturada
-// utilizando MVVM.
 public partial class MainWindow : Window
 {
     // Serviço responsável pela organização dos arquivos.
@@ -40,20 +35,20 @@ public partial class MainWindow : Window
         _organizador =
             new OrganizadorService(configuracao);
 
+        var pastaDownloads = Path.Combine(
+            Environment.GetFolderPath(
+                Environment.SpecialFolder.UserProfile),
+            "Downloads");
+
 
         // Cria o serviço de monitoramento.
-        //
-        // A partir deste momento o FileSystemWatcher
-        // começa a observar a pasta Downloads.
         _monitoramento =
-            new MonitoramentoService(_organizador);
+            new MonitoramentoService(_organizador, pastaDownloads);
     }
 
 
-    // ============================================================
-    // ORGANIZAÇÃO MANUAL
-    // ============================================================
 
+    // ORGANIZAÇÃO MANUAL
     private void OrganizarDownloads_Click(
         object sender,
         RoutedEventArgs e)
@@ -75,10 +70,7 @@ public partial class MainWindow : Window
     }
 
 
-    // ============================================================
     // ENCERRAMENTO DA APLICAÇÃO
-    // ============================================================
-
     protected override void OnClosed(EventArgs e)
     {
         // Quando a janela for fechada,
