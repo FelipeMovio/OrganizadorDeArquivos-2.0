@@ -26,25 +26,29 @@
             Margin="0,0,0,30"/>
 
 
-        <!-- Pasta monitorada -->
-
         <StackPanel Grid.Row="1">
 
             <TextBlock
-                Text="Pasta monitorada"
-                FontSize="16"
-                FontWeight="SemiBold"/>
+        Text="Pasta monitorada"
+        FontSize="16"
+        FontWeight="SemiBold"/>
 
             <TextBox
-                x:Name="PastaMonitoradaTextBox"
-                Margin="0,8,0,0"
-                Height="35"
-                IsReadOnly="True"/>
+        x:Name="PastaMonitoradaTextBox"
+        Margin="0,8,0,0"
+        Height="35"
+        IsReadOnly="True"/>
+
+            <Button
+        Content="Selecionar pasta"
+        Width="189"
+        Height="35"
+        HorizontalAlignment="Left"
+        Margin="0,10,0,0"
+        Click="SelecionarPasta_Click"/>
 
         </StackPanel>
 
-
-        <!-- Status -->
 
         <TextBlock
             Grid.Row="2"
@@ -52,7 +56,8 @@
             Text="🟢 Monitoramento ativo"
             FontSize="16"
             HorizontalAlignment="Center"
-            Margin="0,25,0,25"/>
+            Margin="0,25,0,25"
+            Width="180"/>
 
 
         <!-- Botão -->

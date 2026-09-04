@@ -2,6 +2,7 @@
 using System.Windows;
 using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Service;
+using Microsoft.Win32;
 
 namespace OrganizadorDePasta_2._0;
 
@@ -46,6 +47,23 @@ public partial class MainWindow : Window
             new MonitoramentoService(_organizador, pastaDownloads);
     }
 
+    private void SelecionarPasta_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        // Cria a janela para seleção de uma pasta.
+        var dialog = new OpenFolderDialog();
+
+        // Abre a janela.
+        if (dialog.ShowDialog() == true)
+        {
+            // Exibe o caminho escolhido pelo usuário
+            // no TextBox da interface.
+            PastaMonitoradaTextBox.Text =
+                dialog.FolderName;
+        }
+    }
+
 
 
     // ORGANIZAÇÃO MANUAL
@@ -84,4 +102,6 @@ public partial class MainWindow : Window
         // da janela WPF.
         base.OnClosed(e);
     }
+
+
 }
