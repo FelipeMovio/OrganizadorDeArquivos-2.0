@@ -41,7 +41,7 @@
 
             <Button
         Content="Selecionar pasta"
-        Width="189"
+        Width="640"
         Height="35"
         HorizontalAlignment="Left"
         Margin="0,10,0,0"
@@ -51,25 +51,34 @@
 
 
         <TextBlock
-            Grid.Row="2"
-            x:Name="StatusTextBlock"
-            Text="🟢 Monitoramento ativo"
-            FontSize="16"
-            HorizontalAlignment="Center"
-            Margin="0,25,0,25"
-            Width="180"/>
+        Grid.Row="2"
+        x:Name="StatusTextBlock"
+        Text="🔴 Monitoramento parado"
+        FontSize="16"
+        HorizontalAlignment="Center"
+        Margin="0,25,0,25"
+        Width="220"/>
 
 
-        <!-- Botão -->
+        <StackPanel
+    Grid.Row="3"
+    HorizontalAlignment="Center"
+    VerticalAlignment="Top">
 
-        <Button
-            Grid.Row="3"
-            Content="Organizar agora"
-            Width="180"
-            Height="45"
-            HorizontalAlignment="Center"
-            VerticalAlignment="Top"
-            Click="OrganizarDownloads_Click"/>
+            <Button
+        Content="Iniciar monitoramento"
+        Width="200"
+        Height="40"
+        Margin="0,0,0,10"
+        Click="IniciarMonitoramento_Click"/>
+
+            <Button
+        Content="Parar monitoramento"
+        Width="200"
+        Height="40"
+        Click="PararMonitoramento_Click"/>
+
+        </StackPanel>
 
     </Grid>
 

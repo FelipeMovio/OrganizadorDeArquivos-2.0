@@ -1,107 +1,97 @@
 ﻿using System.IO;
 using System.Windows;
+using Microsoft.Win32;
 using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Service;
-using Microsoft.Win32;
 
 namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
 {
-    // Serviço responsável pela organização dos arquivos.
     private readonly OrganizadorService _organizador;
 
-    // Serviço responsável pelo monitoramento da pasta.
-    private readonly MonitoramentoService _monitoramento;
-
+    private MonitoramentoService? _monitoramento;
 
     public MainWindow()
     {
         InitializeComponent();
 
-
-        // Cria o serviço responsável por carregar
-        // as configurações da aplicação.
+        // Carrega as configurações e cria o serviço de organização.
         ConfiguracaoService configuracaoService =
             new ConfiguracaoService();
 
-
-        // Carrega as regras do arquivo de configuração.
         Configuracao configuracao =
             configuracaoService.CarregarConfiguracao();
 
-
-        // Cria o serviço responsável por organizar
-        // os arquivos.
         _organizador =
             new OrganizadorService(configuracao);
-
-        var pastaDownloads = Path.Combine(
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.UserProfile),
-            "Downloads");
-
-
-        // Cria o serviço de monitoramento.
-        _monitoramento =
-            new MonitoramentoService(_organizador, pastaDownloads);
     }
 
     private void SelecionarPasta_Click(
         object sender,
         RoutedEventArgs e)
     {
-        // Cria a janela para seleção de uma pasta.
         var dialog = new OpenFolderDialog();
 
-        // Abre a janela.
         if (dialog.ShowDialog() == true)
         {
-            // Exibe o caminho escolhido pelo usuário
-            // no TextBox da interface.
             PastaMonitoradaTextBox.Text =
                 dialog.FolderName;
         }
     }
 
-
-
-    // ORGANIZAÇÃO MANUAL
-    private void OrganizarDownloads_Click(
+    private void IniciarMonitoramento_Click(
         object sender,
         RoutedEventArgs e)
     {
-        // Obtém o caminho da pasta Downloads
-        // do usuário atual.
-        var pastaTeste = Path.Combine(
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.UserProfile),
-            "Downloads");
+        // Verifica se uma pasta foi selecionada.
+        if (string.IsNullOrWhiteSpace(
+            PastaMonitoradaTextBox.Text))
+        {
+            MessageBox.Show(
+                "Selecione uma pasta antes de iniciar o monitoramento.");
 
+            return;
+        }
 
-        // Organiza os arquivos que já estavam
-        // na pasta.
-        //
-        // Isso continua existindo porque o monitoramento
-        // trabalha principalmente com arquivos novos.
-        _organizador.OrganizarPasta(pastaTeste);
+        string caminhoPasta =
+            PastaMonitoradaTextBox.Text;
+
+        // Organiza os arquivos que já existem na pasta.
+        _organizador.OrganizarPasta(caminhoPasta);
+
+        // Inicia o monitoramento da pasta selecionada.
+        _monitoramento =
+            new MonitoramentoService(
+                _organizador,
+                caminhoPasta);
+
+        StatusTextBlock.Text =
+            "🟢 Monitoramento ativo";
     }
 
-
-    // ENCERRAMENTO DA APLICAÇÃO
-    protected override void OnClosed(EventArgs e)
+    private void PararMonitoramento_Click(
+        object sender,
+        RoutedEventArgs e)
     {
-        // Quando a janela for fechada,
-        // encerramos o FileSystemWatcher.
-        //
-        // Isso evita deixar recursos abertos.
+        if (_monitoramento == null)
+        {
+            return;
+        }
+
         _monitoramento.Dispose();
 
+        _monitoramento = null;
 
-        // Continua o processo normal de fechamento
-        // da janela WPF.
-        base.OnClosed(e);
+        StatusTextBlock.Text =
+            "🔴 Monitoramento parado";
     }
 
+    protected override void OnClosed(EventArgs e)
+    {
+        // Garante que o monitoramento seja encerrado ao fechar a janela.
+        _monitoramento?.Dispose();
 
+        base.OnClosed(e);
+    }
 }
