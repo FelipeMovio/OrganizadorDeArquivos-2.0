@@ -81,7 +81,7 @@ public partial class MainWindow : Window
 
         _monitoramento.Dispose();
 
-        _monitoramento = null;
+        
 
         StatusTextBlock.Text =
             "🔴 Monitoramento parado";
