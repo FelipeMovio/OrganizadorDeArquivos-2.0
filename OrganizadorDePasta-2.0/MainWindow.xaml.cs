@@ -44,7 +44,6 @@ public partial class MainWindow : Window
         object sender,
         RoutedEventArgs e)
     {
-        // Verifica se uma pasta foi selecionada.
         if (string.IsNullOrWhiteSpace(
             PastaMonitoradaTextBox.Text))
         {
@@ -54,13 +53,16 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (_monitoramento != null)
+        {
+            return;
+        }
+
         string caminhoPasta =
             PastaMonitoradaTextBox.Text;
 
-        // Organiza os arquivos que já existem na pasta.
         _organizador.OrganizarPasta(caminhoPasta);
 
-        // Inicia o monitoramento da pasta selecionada.
         _monitoramento =
             new MonitoramentoService(
                 _organizador,
@@ -71,8 +73,8 @@ public partial class MainWindow : Window
     }
 
     private void PararMonitoramento_Click(
-        object sender,
-        RoutedEventArgs e)
+    object sender,
+    RoutedEventArgs e)
     {
         if (_monitoramento == null)
         {
@@ -81,7 +83,7 @@ public partial class MainWindow : Window
 
         _monitoramento.Dispose();
 
-        
+        _monitoramento = null;
 
         StatusTextBlock.Text =
             "🔴 Monitoramento parado";
