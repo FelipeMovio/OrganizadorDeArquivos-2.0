@@ -49,8 +49,8 @@ public partial class MainWindow : Window
         if (string.IsNullOrWhiteSpace(
             PastaMonitoradaTextBox.Text))
         {
-            MessageBox.Show(
-                "Selecione uma pasta antes de iniciar o monitoramento.");
+            MensagemTextBlock.Text =
+                "Selecione uma pasta antes de iniciar o monitoramento.";
 
             return;
         }
@@ -63,25 +63,42 @@ public partial class MainWindow : Window
         string caminhoPasta =
             PastaMonitoradaTextBox.Text;
 
-        int quantidadeInicial =
-            _organizador.OrganizarPasta(caminhoPasta);
+        try
+        {
+            int quantidadeInicial =
+                _organizador.OrganizarPasta(caminhoPasta);
 
-        _arquivosOrganizados = quantidadeInicial;
+            _arquivosOrganizados = quantidadeInicial;
 
-        ArquivosOrganizadosTextBlock.Text =
-            $"Arquivos organizados: {_arquivosOrganizados}";
+            ArquivosOrganizadosTextBlock.Text =
+                $"Arquivos organizados: {_arquivosOrganizados}";
 
+            _monitoramento =
+                new MonitoramentoService(
+                    _organizador,
+                    caminhoPasta);
 
-        _monitoramento =
-            new MonitoramentoService(
-                _organizador,
-                caminhoPasta);
+            _monitoramento.ArquivoOrganizado += AtualizarContador;
+            _monitoramento.Mensagem += ExibirMensagem;
 
-        _monitoramento.ArquivoOrganizado += AtualizarContador;
-        _monitoramento.Mensagem += ExibirMensagem;
+            StatusTextBlock.Text =
+                "🟢 Monitoramento ativo";
 
-        StatusTextBlock.Text =
-            "🟢 Monitoramento ativo";
+            MensagemTextBlock.Text =
+                "Monitoramento iniciado com sucesso.";
+        }
+        catch (Exception ex)
+        {
+            _monitoramento?.Dispose();
+
+            _monitoramento = null;
+
+            StatusTextBlock.Text =
+                "🔴 Monitoramento parado";
+
+            MensagemTextBlock.Text =
+                $"Erro ao iniciar o monitoramento: {ex.Message}";
+        }
     }
 
     private void PararMonitoramento_Click(
