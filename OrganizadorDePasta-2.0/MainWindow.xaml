@@ -50,14 +50,25 @@
         </StackPanel>
 
 
-        <TextBlock
-        Grid.Row="2"
+        <StackPanel
+    Grid.Row="2"
+    HorizontalAlignment="Center">
+
+            <TextBlock
         x:Name="StatusTextBlock"
         Text="🔴 Monitoramento parado"
         FontSize="16"
         HorizontalAlignment="Center"
-        Margin="0,25,0,25"
-        Width="220"/>
+        Margin="0,25,0,10"/>
+
+            <TextBlock
+        x:Name="ArquivosOrganizadosTextBlock"
+        Text="Arquivos organizados: 0"
+        FontSize="16"
+        HorizontalAlignment="Center"
+        Margin="0,0,0,10"/>
+
+        </StackPanel>
 
 
         <StackPanel

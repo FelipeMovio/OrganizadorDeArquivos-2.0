@@ -16,6 +16,8 @@ public class MonitoramentoService : IDisposable
 
     private readonly string _caminhoPasta;
 
+    public event Action? ArquivoOrganizado;
+
     public MonitoramentoService(
         OrganizadorService organizadorService,
         string caminhoPasta)
@@ -166,6 +168,8 @@ public class MonitoramentoService : IDisposable
 
                 Debug.WriteLine(
                     $"[OK] Arquivo organizado: {caminhoArquivo}");
+
+                ArquivoOrganizado?.Invoke();
 
                 return;
             }

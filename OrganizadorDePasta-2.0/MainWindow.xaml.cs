@@ -12,6 +12,8 @@ public partial class MainWindow : Window
 
     private MonitoramentoService? _monitoramento;
 
+    private int _arquivosOrganizados;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -61,12 +63,21 @@ public partial class MainWindow : Window
         string caminhoPasta =
             PastaMonitoradaTextBox.Text;
 
-        _organizador.OrganizarPasta(caminhoPasta);
+        int quantidadeInicial =
+            _organizador.OrganizarPasta(caminhoPasta);
+
+        _arquivosOrganizados = quantidadeInicial;
+
+        ArquivosOrganizadosTextBlock.Text =
+            $"Arquivos organizados: {_arquivosOrganizados}";
+
 
         _monitoramento =
             new MonitoramentoService(
                 _organizador,
                 caminhoPasta);
+
+        _monitoramento.ArquivoOrganizado += AtualizarContador;
 
         StatusTextBlock.Text =
             "🟢 Monitoramento ativo";
@@ -85,6 +96,8 @@ public partial class MainWindow : Window
 
         _monitoramento = null;
 
+        ZerarContador();
+
         StatusTextBlock.Text =
             "🔴 Monitoramento parado";
     }
@@ -95,5 +108,24 @@ public partial class MainWindow : Window
         _monitoramento?.Dispose();
 
         base.OnClosed(e);
+    }
+
+    private void AtualizarContador()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _arquivosOrganizados++;
+
+            ArquivosOrganizadosTextBlock.Text =
+                $"Arquivos organizados: {_arquivosOrganizados}";
+        });
+    }
+
+    private void ZerarContador()
+    {
+        _arquivosOrganizados = 0;
+
+        ArquivosOrganizadosTextBlock.Text =
+            $"Arquivos organizados: {_arquivosOrganizados}";
     }
 }
