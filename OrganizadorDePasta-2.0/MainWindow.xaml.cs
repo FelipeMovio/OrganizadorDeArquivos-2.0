@@ -78,6 +78,7 @@ public partial class MainWindow : Window
                 caminhoPasta);
 
         _monitoramento.ArquivoOrganizado += AtualizarContador;
+        _monitoramento.Mensagem += ExibirMensagem;
 
         StatusTextBlock.Text =
             "🟢 Monitoramento ativo";
@@ -127,5 +128,13 @@ public partial class MainWindow : Window
 
         ArquivosOrganizadosTextBlock.Text =
             $"Arquivos organizados: {_arquivosOrganizados}";
+    }
+
+    private void ExibirMensagem(string mensagem)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            MensagemTextBlock.Text = mensagem;
+        });
     }
 }

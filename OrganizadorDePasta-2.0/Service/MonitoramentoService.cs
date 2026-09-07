@@ -18,6 +18,8 @@ public class MonitoramentoService : IDisposable
 
     public event Action? ArquivoOrganizado;
 
+    public event Action<string>? Mensagem;
+
     public MonitoramentoService(
         OrganizadorService organizadorService,
         string caminhoPasta)
@@ -155,6 +157,9 @@ public class MonitoramentoService : IDisposable
                         $"[IGNORADO] Arquivo não existe mais: " +
                         $"{caminhoArquivo}");
 
+                    Mensagem?.Invoke(
+                        $"O arquivo '{Path.GetFileName(caminhoArquivo)}' não existe mais.");
+
                     return;
                 }
 
@@ -171,6 +176,9 @@ public class MonitoramentoService : IDisposable
 
                 ArquivoOrganizado?.Invoke();
 
+                Mensagem?.Invoke(
+                    $"Arquivo '{Path.GetFileName(caminhoArquivo)}' organizado com sucesso.");
+
                 return;
             }
             catch (IOException)
@@ -178,6 +186,9 @@ public class MonitoramentoService : IDisposable
                 Debug.WriteLine(
                     $"[AGUARDANDO] Arquivo ainda está em uso. " +
                     $"Tentativa {tentativa}/{MaxTentativas}");
+
+                Mensagem?.Invoke(
+                    $"Aguardando o arquivo '{Path.GetFileName(caminhoArquivo)}' ficar disponível...");
 
                 if (tentativa == MaxTentativas)
                 {
@@ -195,6 +206,9 @@ public class MonitoramentoService : IDisposable
                 Debug.WriteLine(
                     $"[ACESSO NEGADO] " +
                     $"Tentativa {tentativa}/{MaxTentativas}");
+
+                Mensagem?.Invoke(
+                    $"Acesso negado ao arquivo '{Path.GetFileName(caminhoArquivo)}'.");
 
                 if (tentativa == MaxTentativas)
                 {
@@ -273,5 +287,8 @@ public class MonitoramentoService : IDisposable
 
         Debug.WriteLine(
             "[MONITORAMENTO] Encerrado.");
+
+        Mensagem?.Invoke(
+            $"Monitoramento encerrada!");   
     }
 }
