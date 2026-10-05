@@ -87,7 +87,7 @@ public partial class MainWindow : Window
             _monitoramento.ArquivoOrganizado += AtualizarContador;
             _monitoramento.Mensagem += ExibirMensagem;
 
-            StatusTextBlock.Text =
+            _viewModel.Status =
                 "🟢 Monitoramento ativo";
 
             MensagemTextBlock.Text =
@@ -99,7 +99,7 @@ public partial class MainWindow : Window
 
             _monitoramento = null;
 
-            StatusTextBlock.Text =
+            _viewModel.Status =
                 "🔴 Monitoramento parado";
 
             MensagemTextBlock.Text =
@@ -122,7 +122,7 @@ public partial class MainWindow : Window
 
         ZerarContador();
 
-        StatusTextBlock.Text =
+        _viewModel.Status =
             "🔴 Monitoramento parado";
     }
 
