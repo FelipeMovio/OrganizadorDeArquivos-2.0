@@ -11,14 +11,6 @@ using System.IO;
 
 public class OrganizadorService
 {
-    // Contém as regras utilizadas para decidir
-    // em qual pasta cada arquivo será colocado.
-
-    // readonly é um modificador aplicado a campos de uma classe ou estrutura.
-    // Ele garante que o valor do campo só pode ser definido
-    // na sua declaração ou dentro do construtor. Depois disso,
-    // o valor não pode mais ser alterado,
-    // o que ajuda a deixar o código mais seguro e previsível
     private readonly List<RegrasOrganizacao> _regras;
 
     public OrganizadorService(Configuracao configuracao)
@@ -27,25 +19,28 @@ public class OrganizadorService
         //Assim _regras passa a apontar para as regras carregadas do JSON.
     }
 
-    public void OrganizarPasta(string caminhoPasta)
+    public int OrganizarPasta(string caminhoPasta)
     {
-        // Antes de tentar acessar a pasta, verificamos se ela realmente existe.
-        // Caso contrário, interrompemos a operação informando o erro
         if (!Directory.Exists(caminhoPasta))
         {
             throw new DirectoryNotFoundException(
                 $"A pasta '{caminhoPasta}' não existe.");
         }
 
-        // Obtém todos os arquivos existentes diretamente dentro da pasta.
         var arquivos = Directory.GetFiles(caminhoPasta);
 
-        // Percorre cada arquivo encontrado e envia para o processo de organização.
+        int quantidadeOrganizada = 0;
+
         foreach (var arquivo in arquivos)
         {
             OrganizarArquivo(arquivo);
+
+            quantidadeOrganizada++;
         }
+
+        return quantidadeOrganizada;
     }
+
 
     public void OrganizarArquivo(string caminhoArquivo)
     {

@@ -1,95 +1,157 @@
-﻿using System.IO;
-using System.Windows;
+﻿using Microsoft.Win32;
 using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Service;
+using OrganizadorDePasta_2._0.ViewModels;
+using System.Windows;
 
 namespace OrganizadorDePasta_2._0;
 
-// Atualmente o WPF está sendo utilizado como ponto de entrada
-// temporário para testar o núcleo da aplicação.
-//
-// Em uma fase futura a interface poderá ser estruturada
-// utilizando MVVM.
 public partial class MainWindow : Window
 {
-    // Serviço responsável pela organização dos arquivos.
+    private readonly MainViewModel _viewModel;
     private readonly OrganizadorService _organizador;
 
-    // Serviço responsável pelo monitoramento da pasta.
-    private readonly MonitoramentoService _monitoramento;
+    private MonitoramentoService? _monitoramento;
 
+    private int _arquivosOrganizados;
 
     public MainWindow()
     {
+
         InitializeComponent();
 
+        _viewModel = new MainViewModel();
 
-        // Cria o serviço responsável por carregar
-        // as configurações da aplicação.
+        DataContext = _viewModel;
+
+        // Carrega as configurações e cria o serviço de organização.
         ConfiguracaoService configuracaoService =
             new ConfiguracaoService();
 
-
-        // Carrega as regras do arquivo de configuração.
         Configuracao configuracao =
             configuracaoService.CarregarConfiguracao();
 
-
-        // Cria o serviço responsável por organizar
-        // os arquivos.
         _organizador =
             new OrganizadorService(configuracao);
-
-
-        // Cria o serviço de monitoramento.
-        //
-        // A partir deste momento o FileSystemWatcher
-        // começa a observar a pasta Downloads.
-        _monitoramento =
-            new MonitoramentoService(_organizador);
     }
 
-
-    // ============================================================
-    // ORGANIZAÇÃO MANUAL
-    // ============================================================
-
-    private void OrganizarDownloads_Click(
+    private void SelecionarPasta_Click(
         object sender,
         RoutedEventArgs e)
     {
-        // Obtém o caminho da pasta Downloads
-        // do usuário atual.
-        var pastaTeste = Path.Combine(
-            Environment.GetFolderPath(
-                Environment.SpecialFolder.UserProfile),
-            "Downloads");
+        var dialog = new OpenFolderDialog();
 
-
-        // Organiza os arquivos que já estavam
-        // na pasta.
-        //
-        // Isso continua existindo porque o monitoramento
-        // trabalha principalmente com arquivos novos.
-        _organizador.OrganizarPasta(pastaTeste);
+        if (dialog.ShowDialog() == true)
+        {
+            PastaMonitoradaTextBox.Text =
+                dialog.FolderName;
+        }
     }
 
+    private void IniciarMonitoramento_Click(
+        object sender,
+        RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(
+            PastaMonitoradaTextBox.Text))
+        {
+            MensagemTextBlock.Text =
+                "Selecione uma pasta antes de iniciar o monitoramento.";
 
-    // ============================================================
-    // ENCERRAMENTO DA APLICAÇÃO
-    // ============================================================
+            return;
+        }
+
+        if (_monitoramento != null)
+        {
+            return;
+        }
+
+        string caminhoPasta =
+            PastaMonitoradaTextBox.Text;
+
+        try
+        {
+            int quantidadeInicial =
+                _organizador.OrganizarPasta(caminhoPasta);
+
+            _arquivosOrganizados = quantidadeInicial;
+
+            ArquivosOrganizadosTextBlock.Text =
+                $"Arquivos organizados: {_arquivosOrganizados}";
+
+            _monitoramento =
+                new MonitoramentoService(
+                    _organizador,
+                    caminhoPasta);
+
+            _monitoramento.ArquivoOrganizado += AtualizarContador;
+            _monitoramento.Mensagem += ExibirMensagem;
+
+            _viewModel.Status =
+                "🟢 Monitoramento ativo";
+
+            MensagemTextBlock.Text =
+                "Monitoramento iniciado com sucesso.";
+        }
+        catch (Exception ex)
+        {
+            _monitoramento?.Dispose();
+
+            _monitoramento = null;
+
+            _viewModel.Status =
+                "🔴 Monitoramento parado";
+
+            MensagemTextBlock.Text =
+                $"Erro ao iniciar o monitoramento: {ex.Message}";
+        }
+    }
+
+    private void PararMonitoramento_Click(
+    object sender,
+    RoutedEventArgs e)
+    {
+        if (_monitoramento == null)
+        {
+            return;
+        }
+
+        _monitoramento.Dispose();
+
+        _monitoramento = null;
+
+        ZerarContador();
+
+        _viewModel.Status =
+            "🔴 Monitoramento parado";
+    }
 
     protected override void OnClosed(EventArgs e)
     {
-        // Quando a janela for fechada,
-        // encerramos o FileSystemWatcher.
-        //
-        // Isso evita deixar recursos abertos.
-        _monitoramento.Dispose();
+        // Garante que o monitoramento seja encerrado ao fechar a janela.
+        _monitoramento?.Dispose();
 
-
-        // Continua o processo normal de fechamento
-        // da janela WPF.
         base.OnClosed(e);
+    }
+
+    private void AtualizarContador()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _viewModel.ArquivosOrganizados++;
+        });
+    }
+
+    private void ZerarContador()
+    {
+        _viewModel.ArquivosOrganizados = 0;
+    }
+
+    private void ExibirMensagem(string mensagem)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            _viewModel.Mensagem = mensagem;
+        });
     }
 }
