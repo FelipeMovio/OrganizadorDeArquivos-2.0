@@ -138,26 +138,20 @@ public partial class MainWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
-            _arquivosOrganizados++;
-
-            ArquivosOrganizadosTextBlock.Text =
-                $"Arquivos organizados: {_arquivosOrganizados}";
+            _viewModel.ArquivosOrganizados++;
         });
     }
 
     private void ZerarContador()
     {
-        _arquivosOrganizados = 0;
-
-        ArquivosOrganizadosTextBlock.Text =
-            $"Arquivos organizados: {_arquivosOrganizados}";
+        _viewModel.ArquivosOrganizados = 0;
     }
 
     private void ExibirMensagem(string mensagem)
     {
         Dispatcher.Invoke(() =>
         {
-            MensagemTextBlock.Text = mensagem;
+            _viewModel.Mensagem = mensagem;
         });
     }
 }
