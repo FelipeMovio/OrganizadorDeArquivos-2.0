@@ -55,14 +55,14 @@
 
             <TextBlock
         x:Name="StatusTextBlock"
-        Text="🔴 Monitoramento parado"
+        Text="{Binding Status}"
         FontSize="16"
         HorizontalAlignment="Center"
         Margin="0,25,0,10"/>
 
             <TextBlock
         x:Name="ArquivosOrganizadosTextBlock"
-        Text="Arquivos organizados: 0"
+        Text="{Binding ArquivosOrganizados, StringFormat=Arquivos organizados: {0}}"
         FontSize="16"
         HorizontalAlignment="Center"
         Margin="0,0,0,10"/>
@@ -76,7 +76,7 @@
 
             <TextBlock
         x:Name="MensagemTextBlock"
-        Text="Nenhuma mensagem"
+        Text="{Binding Mensagem}"
         FontSize="14"
         HorizontalAlignment="Center"
         TextWrapping="Wrap"/>
