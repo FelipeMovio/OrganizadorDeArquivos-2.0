@@ -7,13 +7,11 @@ public class MainViewModel : INotifyPropertyChanged
 {
     private string _pastaMonitorada = string.Empty;
 
-    private string _status =
-        "🔴 Monitoramento parado";
+    private string _status ="🔴 Monitoramento parado";
 
     private int _arquivosOrganizados;
 
-    private string _mensagem =
-        "Nenhuma mensagem";
+    private string _mensagem ="Nenhuma mensagem";
 
     public string PastaMonitorada
     {
@@ -77,11 +75,9 @@ public class MainViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected void OnPropertyChanged(
-        [CallerMemberName] string? nomePropriedade = null)
+    protected void OnPropertyChanged([CallerMemberName] string? nomePropriedade = null)
     {
         PropertyChanged?.Invoke(
-            this,
-            new PropertyChangedEventArgs(nomePropriedade));
+            this,new PropertyChangedEventArgs(nomePropriedade));
     }
 }
