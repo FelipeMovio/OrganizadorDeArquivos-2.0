@@ -1,13 +1,14 @@
-﻿using System.IO;
-using System.Windows;
-using Microsoft.Win32;
+﻿using Microsoft.Win32;
 using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Service;
+using OrganizadorDePasta_2._0.ViewModels;
+using System.Windows;
 
 namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
 {
+    private readonly MainViewModel _viewModel;
     private readonly OrganizadorService _organizador;
 
     private MonitoramentoService? _monitoramento;
@@ -16,7 +17,12 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+
         InitializeComponent();
+
+        _viewModel = new MainViewModel();
+
+        DataContext = _viewModel;
 
         // Carrega as configurações e cria o serviço de organização.
         ConfiguracaoService configuracaoService =
