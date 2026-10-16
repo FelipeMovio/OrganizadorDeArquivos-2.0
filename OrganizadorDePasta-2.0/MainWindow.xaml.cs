@@ -32,8 +32,11 @@ public partial class MainWindow : Window
         Configuracao configuracao =
             configuracaoService.CarregarConfiguracao();
 
-        _organizador =
-            new OrganizadorService(configuracao);
+        _historicoService = new HistoricoService();
+
+        _organizador = new OrganizadorService(
+            configuracao,
+            _historicoService);
     }
 
     private void SelecionarPasta_Click(
