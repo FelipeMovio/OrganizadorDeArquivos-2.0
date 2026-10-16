@@ -90,6 +90,23 @@ public class OrganizadorService
     }
 
 
+    public void RegistrarFalha(string caminhoArquivo,string mensagem)
+    {
+        var registro = new HistoricoArquivo
+        {
+            NomeArquivo = Path.GetFileName(caminhoArquivo),
+            CaminhoOrigem = caminhoArquivo,
+            CaminhoDestino = null,
+            DataHora = DateTime.Now,
+            Sucesso = false,
+            Mensagem = mensagem
+        };
+
+        _historicoService.Registrar(registro);
+    }
+
+
+
     private RegrasOrganizacao? EncontrarRegra(string extensao)
     {
         // Procura a primeira regra cuja lista de extensões
