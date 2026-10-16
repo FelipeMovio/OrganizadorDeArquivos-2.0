@@ -12,6 +12,7 @@ public partial class MainWindow : Window
     private readonly OrganizadorService _organizador;
 
     private MonitoramentoService? _monitoramento;
+    private readonly HistoricoService _historicoService;
 
     private int _arquivosOrganizados;
 
