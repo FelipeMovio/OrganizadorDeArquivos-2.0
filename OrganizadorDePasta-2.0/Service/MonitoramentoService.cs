@@ -196,6 +196,10 @@ public class MonitoramentoService : IDisposable
                         $"[ERRO] Não foi possível organizar: " +
                         $"{caminhoArquivo}");
 
+                    _organizadorService.RegistrarFalha(
+                        caminhoArquivo,
+                        "Não foi possível organizar o arquivo após várias tentativas.");
+
                     return;
                 }
 
@@ -215,6 +219,10 @@ public class MonitoramentoService : IDisposable
                     Debug.WriteLine(
                         $"[ERRO] Sem acesso ao arquivo: " +
                         $"{caminhoArquivo}");
+
+                    _organizadorService.RegistrarFalha(
+                        caminhoArquivo,
+                        "Acesso negado ao arquivo após várias tentativas.");
 
                     return;
                 }
