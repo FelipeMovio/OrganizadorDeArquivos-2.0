@@ -45,50 +45,50 @@ public class OrganizadorService
     }
 
 
+
     public void OrganizarArquivo(string caminhoArquivo)
     {
+        var extensao =
+            ExtensaoArquivoUtil.ObterExtensao(caminhoArquivo);
 
-        // Descobre a extensão do arquivo, por exemplo:
-        // "foto.jpg" → ".jpg"
-        var extensao = ExtensaoArquivoUtil.ObterExtensao(caminhoArquivo);
-
-        // Procura entre as regras uma que aceite a extensão encontrada.
         var regra = EncontrarRegra(extensao);
 
-        // Se nenhuma regra for encontrada,
-        // o arquivo será enviado para a pasta "Outros".
         var nomePastaDestino = regra?.Nome ?? "Outros";
 
-        // Obtém o diretório onde o arquivo está atualmente.
-        var pastaOrigem = Path.GetDirectoryName(caminhoArquivo)!;
+        var pastaOrigem =
+            Path.GetDirectoryName(caminhoArquivo)!;
 
-        // Cria o caminho da pasta de destino.
-        // Exemplo:
-        // C:\OrganizadorTeste + Imagens
-        // → C:\OrganizadorTeste\Imagens
         var pastaDestino = Path.Combine(
             pastaOrigem,
             nomePastaDestino);
 
-        // Cria a pasta de destino caso ela ainda não exista.
         Directory.CreateDirectory(pastaDestino);
 
-        // Obtém somente o nome do arquivo.
-        // Exemplo:
-        // C:\OrganizadorTeste\foto.jpg
-        // → foto.jpg
         var nomeArquivo = Path.GetFileName(caminhoArquivo);
 
-        // Combina a pasta de destino com o nome do arquivo.
         var destino = Path.Combine(
             pastaDestino,
             nomeArquivo);
 
         destino = ObterCaminhoDisponivel(destino);
 
-        // Move o arquivo da pasta original para a pasta de destino.
+        // Primeiro, tenta mover o arquivo.
         File.Move(caminhoArquivo, destino);
+
+        // Só registra sucesso depois que a movimentação terminar.
+        var registro = new HistoricoArquivo
+        {
+            NomeArquivo = nomeArquivo,
+            CaminhoOrigem = caminhoArquivo,
+            CaminhoDestino = destino,
+            DataHora = DateTime.Now,
+            Sucesso = true,
+            Mensagem = "Arquivo organizado com sucesso."
+        };
+
+        _historicoService.Registrar(registro);
     }
+
 
     private RegrasOrganizacao? EncontrarRegra(string extensao)
     {
