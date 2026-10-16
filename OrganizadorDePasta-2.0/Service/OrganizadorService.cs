@@ -12,11 +12,14 @@ using System.IO;
 public class OrganizadorService
 {
     private readonly List<RegrasOrganizacao> _regras;
+    private readonly HistoricoService _historicoService;
 
-    public OrganizadorService(Configuracao configuracao)
+    public OrganizadorService(
+        Configuracao configuracao,
+        HistoricoService historicoService)
     {
         _regras = configuracao.Regras;
-        //Assim _regras passa a apontar para as regras carregadas do JSON.
+        _historicoService = historicoService;
     }
 
     public int OrganizarPasta(string caminhoPasta)
