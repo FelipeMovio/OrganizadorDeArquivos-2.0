@@ -8,8 +8,8 @@ namespace OrganizadorDePasta_2._0.Service;
 public class HistoricoService
 {
     private readonly List<HistoricoArquivo> _historico = new();
-
     private readonly string _caminhoArquivo;
+    private readonly object _lock = new();
 
     public HistoricoService()
     {
@@ -26,16 +26,40 @@ public class HistoricoService
         CarregarHistorico();
     }
 
-    public void Registrar(HistoricoArquivo registro)
+    public bool TentarRegistrar(
+        HistoricoArquivo registro,
+        out string? erro)
     {
-        _historico.Add(registro);
+        lock (_lock)
+        {
+            _historico.Add(registro);
 
-        SalvarHistorico();
+            try
+            {
+                SalvarHistorico();
+
+                erro = null;
+                return true;
+            }
+            catch (IOException ex)
+            {
+                erro = ex.Message;
+                return false;
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                erro = ex.Message;
+                return false;
+            }
+        }
     }
 
     public List<HistoricoArquivo> ObterHistorico()
     {
-        return _historico.ToList();
+        lock (_lock)
+        {
+            return _historico.ToList();
+        }
     }
 
     private void CarregarHistorico()
@@ -47,8 +71,8 @@ public class HistoricoService
 
         var json = File.ReadAllText(_caminhoArquivo);
 
-        var historico = JsonSerializer.Deserialize<List<HistoricoArquivo>>(
-            json);
+        var historico =
+            JsonSerializer.Deserialize<List<HistoricoArquivo>>(json);
 
         if (historico is not null)
         {
