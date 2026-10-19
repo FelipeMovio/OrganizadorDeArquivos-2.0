@@ -46,6 +46,7 @@ public class OrganizadorService
 
 
 
+
     public void OrganizarArquivo(string caminhoArquivo)
     {
         var extensao =
@@ -72,10 +73,10 @@ public class OrganizadorService
 
         destino = ObterCaminhoDisponivel(destino);
 
-        // Primeiro, tenta mover o arquivo.
+        // Primeiro, movimenta o arquivo.
         File.Move(caminhoArquivo, destino);
 
-        // Só registra sucesso depois que a movimentação terminar.
+        // Depois, registra o resultado da movimentação.
         var registro = new HistoricoArquivo
         {
             NomeArquivo = nomeArquivo,
@@ -86,11 +87,23 @@ public class OrganizadorService
             Mensagem = "Arquivo organizado com sucesso."
         };
 
-        _historicoService.Registrar(registro);
+        bool registrado = _historicoService.TentarRegistrar(
+            registro,
+            out string? erro);
+
+        if (!registrado)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[HISTÓRICO] Não foi possível salvar o registro: {erro}");
+        }
     }
 
 
-    public void RegistrarFalha(string caminhoArquivo,string mensagem)
+
+
+    public void RegistrarFalha(
+        string caminhoArquivo,
+        string mensagem)
     {
         var registro = new HistoricoArquivo
         {
@@ -102,8 +115,17 @@ public class OrganizadorService
             Mensagem = mensagem
         };
 
-        _historicoService.Registrar(registro);
+        bool registrado = _historicoService.TentarRegistrar(
+            registro,
+            out string? erro);
+
+        if (!registrado)
+        {
+            System.Diagnostics.Debug.WriteLine(
+                $"[HISTÓRICO] Não foi possível salvar o registro de falha: {erro}");
+        }
     }
+
 
 
 
