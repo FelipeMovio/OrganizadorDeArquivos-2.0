@@ -91,7 +91,7 @@ public class HistoricoService
                 JsonSerializer.Deserialize<List<HistoricoArquivo>>(
                     json);
 
-            if (historico is null)
+            if (historico == null)
             {
                 throw new JsonException(
                     "O conteúdo do histórico não representa uma lista válida.");

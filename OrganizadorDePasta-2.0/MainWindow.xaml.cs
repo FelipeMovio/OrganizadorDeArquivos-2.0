@@ -34,6 +34,15 @@ public partial class MainWindow : Window
 
         _historicoService = new HistoricoService();
 
+        if (_historicoService.AvisoCarregamento != null)
+        {
+            MessageBox.Show(
+                _historicoService.AvisoCarregamento,
+                "Aviso sobre o histórico",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
         _organizador = new OrganizadorService(
             configuracao,
             _historicoService);
