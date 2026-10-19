@@ -11,6 +11,10 @@ public class HistoricoService
     private readonly string _caminhoArquivo;
     private readonly object _lock = new();
 
+    private bool _persistenciaDisponivel = true;
+
+    public string? AvisoCarregamento { get; private set; }
+
     public HistoricoService()
     {
         var pastaHistorico = Path.Combine(
@@ -33,6 +37,14 @@ public class HistoricoService
         lock (_lock)
         {
             _historico.Add(registro);
+
+            if (!_persistenciaDisponivel)
+            {
+                erro = "A persistência do histórico está indisponível. "
+                     + "O registro foi mantido apenas em memória.";
+
+                return false;
+            }
 
             try
             {
@@ -69,15 +81,68 @@ public class HistoricoService
             return;
         }
 
-        var json = File.ReadAllText(_caminhoArquivo);
+        string json;
 
-        var historico =
-            JsonSerializer.Deserialize<List<HistoricoArquivo>>(json);
-
-        if (historico is not null)
+        try
         {
+            json = File.ReadAllText(_caminhoArquivo);
+
+            var historico =
+                JsonSerializer.Deserialize<List<HistoricoArquivo>>(
+                    json);
+
+            if (historico is null)
+            {
+                throw new JsonException(
+                    "O conteúdo do histórico não representa uma lista válida.");
+            }
+
             _historico.AddRange(historico);
         }
+        catch (JsonException ex)
+        {
+            PreservarHistoricoCorrompido(ex);
+        }
+    }
+
+    private void PreservarHistoricoCorrompido(
+        JsonException erroJson)
+    {
+        var backup = _caminhoArquivo
+            + $".corrompido-{DateTime.Now:yyyyMMdd-HHmmss-fff}.bak";
+
+        try
+        {
+            File.Move(_caminhoArquivo, backup);
+
+            AvisoCarregamento =
+                "O histórico contém JSON inválido e não pôde ser carregado. "
+                + $"O arquivo original foi preservado em: {backup}. "
+                + "A aplicação iniciará com um histórico vazio.";
+        }
+        catch (IOException ex)
+        {
+            _persistenciaDisponivel = false;
+
+            AvisoCarregamento =
+                "O histórico contém JSON inválido e não pôde ser carregado. "
+                + "Também não foi possível preservar o arquivo original. "
+                + "A persistência foi desativada para evitar sobrescrevê-lo. "
+                + $"Erro de backup: {ex.Message}";
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _persistenciaDisponivel = false;
+
+            AvisoCarregamento =
+                "O histórico contém JSON inválido e não pôde ser carregado. "
+                + "Não há permissão para preservar o arquivo original. "
+                + "A persistência foi desativada para evitar sobrescrevê-lo. "
+                + $"Erro de acesso: {ex.Message}";
+        }
+
+        System.Diagnostics.Debug.WriteLine(
+            $"[HISTÓRICO] {erroJson.Message}");
     }
 
     private void SalvarHistorico()
