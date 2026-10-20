@@ -24,4 +24,76 @@ A configuração inicial contempla as seguintes categorias:
 
 | Categoria | Extensões |
 |---|---|
-| Imagens | `.
+| Imagens | `.jpg`, `.jpeg`, `.png`, `.gif`, `.webp` |
+| Documentos | `.pdf`, `.doc`, `.docx`, `.txt` |
+| Vídeos | `.mp4`, `.avi`, `.mkv`, `.mov` |
+| Compactados | `.zip`, `.rar`, `.7z` |
+| Outros | Arquivos sem uma regra correspondente |
+
+As regras podem ser ajustadas no arquivo de configuração da aplicação.
+
+## Tecnologias utilizadas
+
+- **C#** — linguagem de programação.
+- **.NET** — plataforma de desenvolvimento.
+- **WPF (Windows Presentation Foundation)** — construção da interface desktop.
+- **JSON** — configuração e persistência do histórico.
+- **`FileSystemWatcher`** — monitoramento de alterações no sistema de arquivos.
+- **`ILogger`** — logging e diagnóstico da aplicação.
+- **Git e GitHub** — versionamento e gerenciamento do código-fonte.
+
+## Organização do projeto
+
+O projeto busca separar as responsabilidades da aplicação em componentes específicos, como:
+
+- **Models:** representam os dados e as entidades utilizadas.
+- **Services:** concentram as regras de organização, monitoramento, configuração e histórico.
+- **Interface WPF:** disponibiliza os recursos da aplicação ao usuário.
+
+A interface utiliza conceitos de `MainViewModel` e `INotifyPropertyChanged` para atualizar informações exibidas na tela.
+
+## Como executar
+
+1. Clone o repositório:
+
+   ```bash
+   git clone https://github.com/SEU-USUARIO/SEU-REPOSITORIO.git
+   ```
+
+2. Abra a solução ou o projeto no Visual Studio.
+3. Restaure as dependências, caso necessário.
+4. Compile a aplicação.
+5. Execute o projeto WPF.
+
+> Substitua o endereço do repositório no comando acima pela URL real do projeto.
+
+## Configuração
+
+As regras de organização são carregadas de um arquivo `config.json`.
+
+Antes de utilizar o monitoramento, selecione ou configure uma pasta válida para acompanhar. Recomenda-se realizar os primeiros testes com uma pasta contendo arquivos de teste, evitando mover documentos importantes acidentalmente.
+
+O histórico é armazenado em JSON no diretório de execução da aplicação, dentro da pasta `Historico`.
+
+## Objetivos de aprendizado
+
+Este projeto faz parte da minha jornada de aprendizado em desenvolvimento .NET e tem como objetivos:
+
+- Aplicar conceitos de C# e orientação a objetos.
+- Trabalhar com serviços e separação de responsabilidades.
+- Manipular arquivos e diretórios.
+- Implementar monitoramento de eventos do sistema de arquivos.
+- Desenvolver uma interface desktop com WPF.
+- Persistir dados em JSON.
+- Aplicar logging e tratamento de exceções.
+- Utilizar Git e branches para organizar o desenvolvimento por funcionalidades.
+
+## Status do projeto
+
+Em desenvolvimento contínuo, com funcionalidades implementadas de forma incremental para consolidar conhecimentos em C# e .NET.
+
+## Autor
+
+Desenvolvido por **Felipe Movio**.
+
+Projeto pessoal de estudo e prática de desenvolvimento de software com C# e .NET.
