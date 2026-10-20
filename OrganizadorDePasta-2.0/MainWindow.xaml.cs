@@ -1,4 +1,6 @@
-﻿using Microsoft.Win32;
+﻿
+using Microsoft.Extensions.Logging;
+using Microsoft.Win32;
 using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Service;
 using OrganizadorDePasta_2._0.ViewModels;
@@ -8,31 +10,55 @@ namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
 {
+    private readonly ILoggerFactory _loggerFactory;
     private readonly MainViewModel _viewModel;
     private readonly OrganizadorService _organizador;
+    private readonly HistoricoService _historicoService;
 
     private MonitoramentoService? _monitoramento;
 
-    private int _arquivosOrganizados;
-
     public MainWindow()
     {
-
         InitializeComponent();
 
-        _viewModel = new MainViewModel();
+        // Configura os logs para aparecerem na janela Saída do Visual Studio.
+        _loggerFactory = LoggerFactory.Create(builder =>
+        {
+            builder
+                .SetMinimumLevel(LogLevel.Debug)
+                .AddDebug();
+        });
 
+        _viewModel = new MainViewModel();
         DataContext = _viewModel;
 
-        // Carrega as configurações e cria o serviço de organização.
+        // Carrega as configurações da aplicação.
         ConfiguracaoService configuracaoService =
             new ConfiguracaoService();
 
         Configuracao configuracao =
             configuracaoService.CarregarConfiguracao();
 
-        _organizador =
-            new OrganizadorService(configuracao);
+        // Cria o serviço de histórico.
+        _historicoService = new HistoricoService();
+
+        if (_historicoService.AvisoCarregamento != null)
+        {
+            MessageBox.Show(
+                _historicoService.AvisoCarregamento,
+                "Aviso sobre o histórico",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+        }
+
+        // Cria um logger específico para o OrganizadorService.
+        ILogger<OrganizadorService> loggerOrganizador =
+            _loggerFactory.CreateLogger<OrganizadorService>();
+
+        _organizador = new OrganizadorService(
+            configuracao,
+            _historicoService,
+            loggerOrganizador);
     }
 
     private void SelecionarPasta_Click(
@@ -71,18 +97,21 @@ public partial class MainWindow : Window
 
         try
         {
+            // Organiza os arquivos que já estão na pasta.
             int quantidadeInicial =
                 _organizador.OrganizarPasta(caminhoPasta);
 
-            _arquivosOrganizados = quantidadeInicial;
+            _viewModel.ArquivosOrganizados =
+                quantidadeInicial;
 
-            ArquivosOrganizadosTextBlock.Text =
-                $"Arquivos organizados: {_arquivosOrganizados}";
+            // Cria o logger específico do monitoramento.
+            ILogger<MonitoramentoService> loggerMonitoramento =
+                _loggerFactory.CreateLogger<MonitoramentoService>();
 
-            _monitoramento =
-                new MonitoramentoService(
-                    _organizador,
-                    caminhoPasta);
+            _monitoramento = new MonitoramentoService(
+                _organizador,
+                caminhoPasta,
+                loggerMonitoramento);
 
             _monitoramento.ArquivoOrganizado += AtualizarContador;
             _monitoramento.Mensagem += ExibirMensagem;
@@ -90,26 +119,25 @@ public partial class MainWindow : Window
             _viewModel.Status =
                 "🟢 Monitoramento ativo";
 
-            MensagemTextBlock.Text =
+            _viewModel.Mensagem =
                 "Monitoramento iniciado com sucesso.";
         }
         catch (Exception ex)
         {
             _monitoramento?.Dispose();
-
             _monitoramento = null;
 
             _viewModel.Status =
                 "🔴 Monitoramento parado";
 
-            MensagemTextBlock.Text =
+            _viewModel.Mensagem =
                 $"Erro ao iniciar o monitoramento: {ex.Message}";
         }
     }
 
     private void PararMonitoramento_Click(
-    object sender,
-    RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         if (_monitoramento == null)
         {
@@ -117,19 +145,24 @@ public partial class MainWindow : Window
         }
 
         _monitoramento.Dispose();
-
         _monitoramento = null;
 
         ZerarContador();
 
         _viewModel.Status =
             "🔴 Monitoramento parado";
+
+        _viewModel.Mensagem =
+            "Monitoramento encerrado.";
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        // Garante que o monitoramento seja encerrado ao fechar a janela.
+        // Encerra o monitoramento antes de liberar os loggers.
         _monitoramento?.Dispose();
+        _monitoramento = null;
+
+        _loggerFactory.Dispose();
 
         base.OnClosed(e);
     }

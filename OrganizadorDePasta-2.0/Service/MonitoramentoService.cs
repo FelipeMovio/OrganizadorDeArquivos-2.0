@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿
+using Microsoft.Extensions.Logging;
 using System.IO;
 
 namespace OrganizadorDePasta_2._0.Service;
@@ -7,6 +8,7 @@ public class MonitoramentoService : IDisposable
 {
     private readonly FileSystemWatcher _watcher;
     private readonly OrganizadorService _organizadorService;
+    private readonly ILogger<MonitoramentoService> _logger;
 
     private readonly HashSet<string> _arquivosProcessando = new();
     private readonly object _lock = new();
@@ -16,19 +18,26 @@ public class MonitoramentoService : IDisposable
 
     private readonly string _caminhoPasta;
 
-    public event Action? ArquivoOrganizado;
+    private bool _disposed;
 
+    public event Action? ArquivoOrganizado;
     public event Action<string>? Mensagem;
 
     public MonitoramentoService(
         OrganizadorService organizadorService,
-        string caminhoPasta)
+        string caminhoPasta,
+        ILogger<MonitoramentoService> logger)
     {
         _organizadorService = organizadorService;
         _caminhoPasta = caminhoPasta;
+        _logger = logger;
 
         if (!Directory.Exists(_caminhoPasta))
         {
+            _logger.LogError(
+                "A pasta de monitoramento não existe: {CaminhoPasta}",
+                _caminhoPasta);
+
             throw new DirectoryNotFoundException(
                 $"A pasta monitorada não existe: {_caminhoPasta}");
         }
@@ -48,18 +57,19 @@ public class MonitoramentoService : IDisposable
 
         _watcher.EnableRaisingEvents = true;
 
-        Debug.WriteLine(
-            $"[MONITORAMENTO] Iniciado: {_caminhoPasta}");
+        _logger.LogInformation(
+            "Monitoramento iniciado na pasta {CaminhoPasta}.",
+            _caminhoPasta);
     }
 
     private void ArquivoCriado(
         object sender,
         FileSystemEventArgs e)
     {
-        Debug.WriteLine(
-            $"[CREATED] {e.FullPath}");
+        _logger.LogDebug(
+            "Evento de criação detectado para {CaminhoArquivo}.",
+            e.FullPath);
 
-        // Ignora arquivos temporários e diretórios.
         if (DeveIgnorarArquivo(e.FullPath))
         {
             return;
@@ -72,65 +82,84 @@ public class MonitoramentoService : IDisposable
         object sender,
         RenamedEventArgs e)
     {
-        Debug.WriteLine(
-            $"[RENAMED] {e.OldFullPath} -> {e.FullPath}");
+        _logger.LogDebug(
+            "Arquivo renomeado de {Origem} para {Destino}.",
+            e.OldFullPath,
+            e.FullPath);
 
-        // Detecta quando um download temporário é finalizado.
-        if (e.OldFullPath.EndsWith(
+        bool eraDownloadTemporario =
+            e.OldFullPath.EndsWith(
                 ".crdownload",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            Debug.WriteLine(
-                $"[DOWNLOAD] Download concluído: {e.FullPath}");
-
-            ProcessarArquivo(e.FullPath);
-
-            return;
-        }
-
-        if (e.OldFullPath.EndsWith(
+                StringComparison.OrdinalIgnoreCase)
+            ||
+            e.OldFullPath.EndsWith(
                 ".part",
-                StringComparison.OrdinalIgnoreCase))
+                StringComparison.OrdinalIgnoreCase);
+
+        if (!eraDownloadTemporario)
         {
-            Debug.WriteLine(
-                $"[DOWNLOAD] Download concluído: {e.FullPath}");
-
-            ProcessarArquivo(e.FullPath);
-
             return;
         }
+
+        _logger.LogInformation(
+            "Possível download concluído: {CaminhoArquivo}.",
+            e.FullPath);
+
+        if (DeveIgnorarArquivo(e.FullPath))
+        {
+            return;
+        }
+
+        ProcessarArquivo(e.FullPath);
     }
 
-    private void ProcessarArquivo(
-        string caminhoArquivo)
+    private void ProcessarArquivo(string caminhoArquivo)
     {
         if (Directory.Exists(caminhoArquivo))
         {
+            _logger.LogDebug(
+                "Diretório ignorado: {CaminhoArquivo}.",
+                caminhoArquivo);
+
             return;
         }
 
-        // Evita que o mesmo arquivo seja processado mais de uma vez.
         lock (_lock)
         {
+            if (_disposed)
+            {
+                return;
+            }
+
             if (!_arquivosProcessando.Add(caminhoArquivo))
             {
-                Debug.WriteLine(
-                    $"[IGNORADO] Arquivo já está sendo processado: " +
-                    $"{caminhoArquivo}");
+                _logger.LogDebug(
+                    "Arquivo já está sendo processado: {CaminhoArquivo}.",
+                    caminhoArquivo);
 
                 return;
             }
         }
 
-        // Executa o processamento fora da thread do FileSystemWatcher.
-        _ = Task.Run(() =>
+        _ = Task.Run(async () =>
         {
             try
             {
-                // Aguarda o arquivo terminar de ser gravado.
-                Thread.Sleep(1000);
+                // Dá tempo para o arquivo terminar de ser gravado.
+                await Task.Delay(TempoEspera);
 
                 OrganizarComRetry(caminhoArquivo);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Erro inesperado ao processar {CaminhoArquivo}.",
+                    caminhoArquivo);
+
+                Notificar(
+                    $"Ocorreu um erro inesperado ao processar " +
+                    $"'{Path.GetFileName(caminhoArquivo)}'.");
             }
             finally
             {
@@ -142,8 +171,7 @@ public class MonitoramentoService : IDisposable
         });
     }
 
-    private void OrganizarComRetry(
-        string caminhoArquivo)
+    private void OrganizarComRetry(string caminhoArquivo)
     {
         for (int tentativa = 1;
              tentativa <= MaxTentativas;
@@ -153,107 +181,155 @@ public class MonitoramentoService : IDisposable
             {
                 if (!File.Exists(caminhoArquivo))
                 {
-                    Debug.WriteLine(
-                        $"[IGNORADO] Arquivo não existe mais: " +
-                        $"{caminhoArquivo}");
+                    _logger.LogWarning(
+                        "O arquivo não existe mais e será ignorado: {CaminhoArquivo}.",
+                        caminhoArquivo);
 
-                    Mensagem?.Invoke(
-                        $"O arquivo '{Path.GetFileName(caminhoArquivo)}' não existe mais.");
+                    Notificar(
+                        $"O arquivo '{Path.GetFileName(caminhoArquivo)}' " +
+                        "não existe mais.");
 
                     return;
                 }
 
-                Debug.WriteLine(
-                    $"[TENTATIVA {tentativa}/{MaxTentativas}] " +
-                    $"{caminhoArquivo}");
-
-                // A organização é responsabilidade do OrganizadorService.
-                _organizadorService.OrganizarArquivo(
+                _logger.LogDebug(
+                    "Tentativa {Tentativa}/{MaxTentativas} para organizar {CaminhoArquivo}.",
+                    tentativa,
+                    MaxTentativas,
                     caminhoArquivo);
 
-                Debug.WriteLine(
-                    $"[OK] Arquivo organizado: {caminhoArquivo}");
+                _organizadorService.OrganizarArquivo(caminhoArquivo);
+
+                _logger.LogInformation(
+                    "Arquivo organizado com sucesso: {CaminhoArquivo}.",
+                    caminhoArquivo);
 
                 ArquivoOrganizado?.Invoke();
 
-                Mensagem?.Invoke(
-                    $"Arquivo '{Path.GetFileName(caminhoArquivo)}' organizado com sucesso.");
+                Notificar(
+                    $"Arquivo '{Path.GetFileName(caminhoArquivo)}' " +
+                    "organizado com sucesso.");
 
                 return;
             }
-            catch (IOException)
+            catch (IOException ex)
             {
-                Debug.WriteLine(
-                    $"[AGUARDANDO] Arquivo ainda está em uso. " +
-                    $"Tentativa {tentativa}/{MaxTentativas}");
-
-                Mensagem?.Invoke(
-                    $"Aguardando o arquivo '{Path.GetFileName(caminhoArquivo)}' ficar disponível...");
+                _logger.LogWarning(
+                    ex,
+                    "Erro de entrada/saída na tentativa {Tentativa}/{MaxTentativas} " +
+                    "para {CaminhoArquivo}.",
+                    tentativa,
+                    MaxTentativas,
+                    caminhoArquivo);
 
                 if (tentativa == MaxTentativas)
                 {
-                    Debug.WriteLine(
-                        $"[ERRO] Não foi possível organizar: " +
-                        $"{caminhoArquivo}");
+                    RegistrarFalhaFinal(
+                        caminhoArquivo,
+                        "Não foi possível organizar o arquivo após várias tentativas.");
 
                     return;
                 }
+
+                Notificar(
+                    $"Aguardando o arquivo " +
+                    $"'{Path.GetFileName(caminhoArquivo)}' ficar disponível...");
 
                 Thread.Sleep(TempoEspera);
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
-                Debug.WriteLine(
-                    $"[ACESSO NEGADO] " +
-                    $"Tentativa {tentativa}/{MaxTentativas}");
-
-                Mensagem?.Invoke(
-                    $"Acesso negado ao arquivo '{Path.GetFileName(caminhoArquivo)}'.");
+                _logger.LogWarning(
+                    ex,
+                    "Acesso negado na tentativa {Tentativa}/{MaxTentativas} " +
+                    "para {CaminhoArquivo}.",
+                    tentativa,
+                    MaxTentativas,
+                    caminhoArquivo);
 
                 if (tentativa == MaxTentativas)
                 {
-                    Debug.WriteLine(
-                        $"[ERRO] Sem acesso ao arquivo: " +
-                        $"{caminhoArquivo}");
+                    RegistrarFalhaFinal(
+                        caminhoArquivo,
+                        "Acesso negado ao arquivo após várias tentativas.");
 
                     return;
                 }
 
+                Notificar(
+                    $"Acesso negado ao arquivo " +
+                    $"'{Path.GetFileName(caminhoArquivo)}'. " +
+                    "Uma nova tentativa será realizada.");
+
                 Thread.Sleep(TempoEspera);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Erro inesperado ao organizar {CaminhoArquivo}.",
+                    caminhoArquivo);
+
+                RegistrarFalhaFinal(
+                    caminhoArquivo,
+                    $"Erro inesperado: {ex.Message}");
+
+                return;
             }
         }
     }
 
-    private bool DeveIgnorarArquivo(
-        string caminhoArquivo)
+    private void RegistrarFalhaFinal(
+        string caminhoArquivo,
+        string mensagem)
+    {
+        _logger.LogError(
+            "Não foi possível organizar {CaminhoArquivo}. Motivo: {Mensagem}",
+            caminhoArquivo,
+            mensagem);
+
+        try
+        {
+            _organizadorService.RegistrarFalha(
+                caminhoArquivo,
+                mensagem);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Não foi possível registrar a falha no histórico para {CaminhoArquivo}.",
+                caminhoArquivo);
+        }
+
+        Notificar(
+            $"Falha ao organizar '{Path.GetFileName(caminhoArquivo)}'.");
+    }
+
+    private bool DeveIgnorarArquivo(string caminhoArquivo)
     {
         if (Directory.Exists(caminhoArquivo))
         {
-            Debug.WriteLine(
-                $"[IGNORADO] Diretório: {caminhoArquivo}");
+            _logger.LogDebug(
+                "Diretório ignorado: {CaminhoArquivo}.",
+                caminhoArquivo);
 
             return true;
         }
 
-        string nomeArquivo =
-            Path.GetFileName(caminhoArquivo);
+        string nomeArquivo = Path.GetFileName(caminhoArquivo);
 
         if (nomeArquivo.EndsWith(
                 ".crdownload",
-                StringComparison.OrdinalIgnoreCase))
-        {
-            Debug.WriteLine(
-                $"[IGNORADO] Arquivo temporário: {nomeArquivo}");
-
-            return true;
-        }
-
-        if (nomeArquivo.EndsWith(
+                StringComparison.OrdinalIgnoreCase)
+            ||
+            nomeArquivo.EndsWith(
                 ".part",
                 StringComparison.OrdinalIgnoreCase))
         {
-            Debug.WriteLine(
-                $"[IGNORADO] Arquivo temporário: {nomeArquivo}");
+            _logger.LogDebug(
+                "Arquivo temporário ignorado: {NomeArquivo}.",
+                nomeArquivo);
 
             return true;
         }
@@ -265,13 +341,43 @@ public class MonitoramentoService : IDisposable
         object sender,
         ErrorEventArgs e)
     {
-        Debug.WriteLine(
-            $"[WATCHER ERROR] " +
-            $"{e.GetException().Message}");
+        Exception erro = e.GetException();
+
+        _logger.LogError(
+            erro,
+            "O FileSystemWatcher encontrou um erro na pasta {CaminhoPasta}.",
+            _caminhoPasta);
+
+        Notificar(
+            "Ocorreu um erro durante o monitoramento da pasta.");
+    }
+
+    private void Notificar(string mensagem)
+    {
+        try
+        {
+            Mensagem?.Invoke(mensagem);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Um assinante do evento Mensagem lançou uma exceção.");
+        }
     }
 
     public void Dispose()
     {
+        lock (_lock)
+        {
+            if (_disposed)
+            {
+                return;
+            }
+
+            _disposed = true;
+        }
+
         _watcher.EnableRaisingEvents = false;
 
         _watcher.Created -= ArquivoCriado;
@@ -285,10 +391,10 @@ public class MonitoramentoService : IDisposable
             _arquivosProcessando.Clear();
         }
 
-        Debug.WriteLine(
-            "[MONITORAMENTO] Encerrado.");
+        _logger.LogInformation(
+            "Monitoramento encerrado na pasta {CaminhoPasta}.",
+            _caminhoPasta);
 
-        Mensagem?.Invoke(
-            $"Monitoramento encerrada!");   
+        Notificar("Monitoramento encerrado.");
     }
 }

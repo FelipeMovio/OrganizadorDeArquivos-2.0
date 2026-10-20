@@ -1,100 +1,181 @@
-﻿using OrganizadorDePasta_2._0.Models;
-
-namespace OrganizadorDePasta_2._0.Service;
-
-
-
+﻿
+using Microsoft.Extensions.Logging;
+using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Utils;
 using System.IO;
 
-
+namespace OrganizadorDePasta_2._0.Service;
 
 public class OrganizadorService
 {
     private readonly List<RegrasOrganizacao> _regras;
+    private readonly HistoricoService _historicoService;
+    private readonly ILogger<OrganizadorService> _logger;
 
-    public OrganizadorService(Configuracao configuracao)
+    public OrganizadorService(
+        Configuracao configuracao,
+        HistoricoService historicoService,
+        ILogger<OrganizadorService> logger)
     {
         _regras = configuracao.Regras;
-        //Assim _regras passa a apontar para as regras carregadas do JSON.
+        _historicoService = historicoService;
+        _logger = logger;
+
+        _logger.LogInformation(
+            "OrganizadorService inicializado com {QuantidadeRegras} regras.",
+            _regras.Count);
     }
 
     public int OrganizarPasta(string caminhoPasta)
     {
         if (!Directory.Exists(caminhoPasta))
         {
+            _logger.LogWarning(
+                "A pasta informada não existe: {CaminhoPasta}",
+                caminhoPasta);
+
             throw new DirectoryNotFoundException(
                 $"A pasta '{caminhoPasta}' não existe.");
         }
 
-        var arquivos = Directory.GetFiles(caminhoPasta);
+        _logger.LogInformation(
+            "Iniciando organização da pasta {CaminhoPasta}.",
+            caminhoPasta);
 
+        var arquivos = Directory.GetFiles(caminhoPasta);
         int quantidadeOrganizada = 0;
 
         foreach (var arquivo in arquivos)
         {
             OrganizarArquivo(arquivo);
-
             quantidadeOrganizada++;
         }
+
+        _logger.LogInformation(
+            "Organização concluída. {Quantidade} arquivos organizados em {CaminhoPasta}.",
+            quantidadeOrganizada,
+            caminhoPasta);
 
         return quantidadeOrganizada;
     }
 
-
     public void OrganizarArquivo(string caminhoArquivo)
     {
+        var extensao =
+            ExtensaoArquivoUtil.ObterExtensao(caminhoArquivo);
 
-        // Descobre a extensão do arquivo, por exemplo:
-        // "foto.jpg" → ".jpg"
-        var extensao = ExtensaoArquivoUtil.ObterExtensao(caminhoArquivo);
-
-        // Procura entre as regras uma que aceite a extensão encontrada.
         var regra = EncontrarRegra(extensao);
-
-        // Se nenhuma regra for encontrada,
-        // o arquivo será enviado para a pasta "Outros".
         var nomePastaDestino = regra?.Nome ?? "Outros";
 
-        // Obtém o diretório onde o arquivo está atualmente.
-        var pastaOrigem = Path.GetDirectoryName(caminhoArquivo)!;
+        var pastaOrigem =
+            Path.GetDirectoryName(caminhoArquivo)!;
 
-        // Cria o caminho da pasta de destino.
-        // Exemplo:
-        // C:\OrganizadorTeste + Imagens
-        // → C:\OrganizadorTeste\Imagens
         var pastaDestino = Path.Combine(
             pastaOrigem,
             nomePastaDestino);
 
-        // Cria a pasta de destino caso ela ainda não exista.
-        Directory.CreateDirectory(pastaDestino);
-
-        // Obtém somente o nome do arquivo.
-        // Exemplo:
-        // C:\OrganizadorTeste\foto.jpg
-        // → foto.jpg
         var nomeArquivo = Path.GetFileName(caminhoArquivo);
 
-        // Combina a pasta de destino com o nome do arquivo.
-        var destino = Path.Combine(
-            pastaDestino,
-            nomeArquivo);
+        try
+        {
+            Directory.CreateDirectory(pastaDestino);
 
-        destino = ObterCaminhoDisponivel(destino);
+            var destino = Path.Combine(
+                pastaDestino,
+                nomeArquivo);
 
-        // Move o arquivo da pasta original para a pasta de destino.
-        File.Move(caminhoArquivo, destino);
+            destino = ObterCaminhoDisponivel(destino);
+
+            // A exceção é propagada para permitir as tentativas
+            // de repetição realizadas pelo MonitoramentoService.
+            File.Move(caminhoArquivo, destino);
+
+            _logger.LogInformation(
+                "Arquivo {NomeArquivo} movido de {Origem} para {Destino}.",
+                nomeArquivo,
+                caminhoArquivo,
+                destino);
+
+            var registro = new HistoricoArquivo
+            {
+                NomeArquivo = nomeArquivo,
+                CaminhoOrigem = caminhoArquivo,
+                CaminhoDestino = destino,
+                DataHora = DateTime.Now,
+                Sucesso = true,
+                Mensagem = "Arquivo organizado com sucesso."
+            };
+
+            RegistrarHistorico(registro);
+        }
+        catch (IOException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Erro de entrada/saída ao organizar o arquivo {CaminhoArquivo}.",
+                caminhoArquivo);
+
+            throw;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogError(
+                ex,
+                "Acesso negado ao organizar o arquivo {CaminhoArquivo}.",
+                caminhoArquivo);
+
+            throw;
+        }
+    }
+
+    public void RegistrarFalha(
+        string caminhoArquivo,
+        string mensagem)
+    {
+        _logger.LogWarning(
+            "Registrando falha na organização de {CaminhoArquivo}: {Mensagem}",
+            caminhoArquivo,
+            mensagem);
+
+        var registro = new HistoricoArquivo
+        {
+            NomeArquivo = Path.GetFileName(caminhoArquivo),
+            CaminhoOrigem = caminhoArquivo,
+            CaminhoDestino = null,
+            DataHora = DateTime.Now,
+            Sucesso = false,
+            Mensagem = mensagem
+        };
+
+        RegistrarHistorico(registro);
+    }
+
+    private void RegistrarHistorico(HistoricoArquivo registro)
+    {
+        bool registrado = _historicoService.TentarRegistrar(
+            registro,
+            out string? erro);
+
+        if (!registrado)
+        {
+            _logger.LogWarning(
+                "Não foi possível persistir o histórico do arquivo {NomeArquivo}: {Erro}",
+                registro.NomeArquivo,
+                erro);
+        }
+        else
+        {
+            _logger.LogDebug(
+                "Registro de histórico salvo para {NomeArquivo}.",
+                registro.NomeArquivo);
+        }
     }
 
     private RegrasOrganizacao? EncontrarRegra(string extensao)
     {
-        // Procura a primeira regra cuja lista de extensões
-        // contenha a extensão do arquivo
         return _regras.FirstOrDefault(regra =>
             regra.Extensoes.Contains(extensao));
     }
-   
 
     private string ObterCaminhoDisponivel(string caminhoDestino)
     {
@@ -104,14 +185,16 @@ public class OrganizadorService
         }
 
         var pasta = Path.GetDirectoryName(caminhoDestino)!;
-        var nomeSemExtensao = Path.GetFileNameWithoutExtension(caminhoDestino);
+        var nomeSemExtensao =
+            Path.GetFileNameWithoutExtension(caminhoDestino);
         var extensao = Path.GetExtension(caminhoDestino);
 
         int contador = 1;
 
         while (true)
         {
-            var novoNome = $"{nomeSemExtensao} ({contador}){extensao}";
+            var novoNome =
+                $"{nomeSemExtensao} ({contador}){extensao}";
 
             var novoCaminho = Path.Combine(
                 pasta,
