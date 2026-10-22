@@ -32,7 +32,7 @@ public partial class App : Application
 
         DbContext = new OrganizadorDbContext(options);
 
-        var mainWindow = new MainWindow();
+        var mainWindow = new MainWindow(DbContext);
         mainWindow.Show();
     }
 
