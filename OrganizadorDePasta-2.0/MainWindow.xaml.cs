@@ -12,7 +12,7 @@ namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
 {
-    private readonly OrganizadorDbContext _dbContext;
+    private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MainViewModel _viewModel;
     private readonly OrganizadorService _organizador;
@@ -20,11 +20,11 @@ public partial class MainWindow : Window
 
     private MonitoramentoService? _monitoramento;
 
-    public MainWindow(OrganizadorDbContext dbContext)
-    {
+    public MainWindow(IDbContextFactory<OrganizadorDbContext> dbContextFactory)
+    { 
         InitializeComponent();
 
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
         // Configura os logs para aparecerem na janela Saída do Visual Studio.
         _loggerFactory = LoggerFactory.Create(builder =>
         {
