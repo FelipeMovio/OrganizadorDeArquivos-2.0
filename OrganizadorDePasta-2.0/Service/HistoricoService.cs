@@ -1,5 +1,7 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
 using OrganizadorDePasta_2._0.Models;
+using OrganizadorDePasta_2._0.Repository;
 using System.IO;
 using System.Text.Json;
 
@@ -14,9 +16,12 @@ public class HistoricoService
     private bool _persistenciaDisponivel = true;
 
     public string? AvisoCarregamento { get; private set; }
-
-    public HistoricoService()
+    private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
+    public HistoricoService(
+        IDbContextFactory<OrganizadorDbContext> dbContextFactory)
     {
+        _dbContextFactory = dbContextFactory;
+
         var pastaHistorico = Path.Combine(
             AppContext.BaseDirectory,
             "Historico");
@@ -38,33 +43,50 @@ public class HistoricoService
         {
             _historico.Add(registro);
 
-            if (!_persistenciaDisponivel)
-            {
-                erro = "A persistência do histórico está indisponível. "
-                     + "O registro foi mantido apenas em memória.";
+            var erros = new List<string>();
 
-                return false;
+            // Tenta salvar no JSON.
+            if (_persistenciaDisponivel)
+            {
+                try
+                {
+                    SalvarHistorico();
+                }
+                catch (IOException ex)
+                {
+                    erros.Add($"JSON: {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    erros.Add($"JSON: {ex.Message}");
+                }
+            }
+            else
+            {
+                erros.Add("JSON: a persistência está indisponível.");
             }
 
+            // Tenta salvar no SQL Server independentemente do JSON.
             try
             {
-                SalvarHistorico();
+                SalvarNoSqlServer(registro);
+            }
+            catch (Exception ex)
+            {
+                erros.Add($"SQL Server: {ex.Message}");
+            }
 
-                erro = null;
-                return true;
-            }
-            catch (IOException ex)
+            if (erros.Count > 0)
             {
-                erro = ex.Message;
+                erro = string.Join(Environment.NewLine, erros);
                 return false;
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                erro = ex.Message;
-                return false;
-            }
+
+            erro = null;
+            return true;
         }
     }
+
 
     public List<HistoricoArquivo> ObterHistorico()
     {
@@ -158,4 +180,16 @@ public class HistoricoService
 
         File.WriteAllText(_caminhoArquivo, json);
     }
+    private void SalvarNoSqlServer(HistoricoArquivo registro)
+    {
+        using var dbContext = _dbContextFactory.CreateDbContext();
+
+        // O Id é gerado pelo SQL Server.
+        registro.Id = 0;
+
+        dbContext.HistoricoArquivos.Add(registro);
+
+        dbContext.SaveChanges();
+    }
+
 }

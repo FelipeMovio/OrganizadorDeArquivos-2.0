@@ -1,7 +1,9 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using OrganizadorDePasta_2._0.Models;
+using OrganizadorDePasta_2._0.Repository;
 using OrganizadorDePasta_2._0.Service;
 using OrganizadorDePasta_2._0.ViewModels;
 using System.Windows;
@@ -10,6 +12,7 @@ namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
 {
+    private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MainViewModel _viewModel;
     private readonly OrganizadorService _organizador;
@@ -17,10 +20,11 @@ public partial class MainWindow : Window
 
     private MonitoramentoService? _monitoramento;
 
-    public MainWindow()
-    {
+    public MainWindow(IDbContextFactory<OrganizadorDbContext> dbContextFactory)
+    { 
         InitializeComponent();
 
+        _dbContextFactory = dbContextFactory;
         // Configura os logs para aparecerem na janela Saída do Visual Studio.
         _loggerFactory = LoggerFactory.Create(builder =>
         {
@@ -40,7 +44,7 @@ public partial class MainWindow : Window
             configuracaoService.CarregarConfiguracao();
 
         // Cria o serviço de histórico.
-        _historicoService = new HistoricoService();
+        _historicoService = new HistoricoService(_dbContextFactory);
 
         if (_historicoService.AvisoCarregamento != null)
         {
