@@ -1,16 +1,16 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using OrganizadorDePasta_2._0.Repository;
 using System.Windows;
 
 namespace OrganizadorDePasta_2._0;
 
-/// <summary>
-/// Interaction logic for App.xaml
-/// </summary>
 public partial class App : Application
 {
-    public OrganizadorDbContext DbContext { get; private set; } = null!;
+    public IDbContextFactory<OrganizadorDbContext> DbContextFactory
+    { get; private set; } = null!;
 
     protected override void OnStartup(StartupEventArgs e)
     {
@@ -26,19 +26,21 @@ public partial class App : Application
             ?? throw new InvalidOperationException(
                 "A connection string OrganizadorConnection não foi encontrada.");
 
-        var options = new DbContextOptionsBuilder<OrganizadorDbContext>()
-            .UseSqlServer(connectionString)
-            .Options;
+        DbContextFactory =
+            new PooledDbContextFactory<OrganizadorDbContext>(
+                new DbContextOptionsBuilder<OrganizadorDbContext>()
+                    .UseSqlServer(connectionString)
+                    .Options);
 
-        DbContext = new OrganizadorDbContext(options);
-
-        var mainWindow = new MainWindow(DbContext);
+        var mainWindow = new MainWindow(DbContextFactory);
         mainWindow.Show();
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
-        DbContext?.Dispose();
+        if (DbContextFactory is IDisposable disposable)
+            disposable.Dispose();
+
         base.OnExit(e);
     }
 }
