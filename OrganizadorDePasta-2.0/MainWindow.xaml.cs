@@ -44,7 +44,7 @@ public partial class MainWindow : Window
             configuracaoService.CarregarConfiguracao();
 
         // Cria o serviço de histórico.
-        _historicoService = new HistoricoService();
+        _historicoService = new HistoricoService(_dbContextFactory);
 
         if (_historicoService.AvisoCarregamento != null)
         {

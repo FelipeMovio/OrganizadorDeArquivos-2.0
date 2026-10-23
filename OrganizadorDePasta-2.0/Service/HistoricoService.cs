@@ -1,5 +1,8 @@
 ﻿
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using OrganizadorDePasta_2._0.Models;
+using OrganizadorDePasta_2._0.Repository;
 using System.IO;
 using System.Text.Json;
 
@@ -14,9 +17,12 @@ public class HistoricoService
     private bool _persistenciaDisponivel = true;
 
     public string? AvisoCarregamento { get; private set; }
-
-    public HistoricoService()
+    private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
+    public HistoricoService(
+        IDbContextFactory<OrganizadorDbContext> dbContextFactory)
     {
+        _dbContextFactory = dbContextFactory;
+
         var pastaHistorico = Path.Combine(
             AppContext.BaseDirectory,
             "Historico");
@@ -29,7 +35,6 @@ public class HistoricoService
 
         CarregarHistorico();
     }
-
     public bool TentarRegistrar(
         HistoricoArquivo registro,
         out string? erro)
