@@ -12,6 +12,7 @@ namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
 {
+    private bool _iniciandoMonitoramento;
     private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MainViewModel _viewModel;
@@ -78,37 +79,37 @@ public partial class MainWindow : Window
         }
     }
 
-    private void IniciarMonitoramento_Click(
-        object sender,
-        RoutedEventArgs e)
+    private async void IniciarMonitoramento_Click(
+     object sender,
+     RoutedEventArgs e)
     {
-        if (string.IsNullOrWhiteSpace(
-            PastaMonitoradaTextBox.Text))
+        if (string.IsNullOrWhiteSpace(PastaMonitoradaTextBox.Text))
         {
-            MensagemTextBlock.Text =
+            _viewModel.Mensagem =
                 "Selecione uma pasta antes de iniciar o monitoramento.";
-
             return;
         }
 
-        if (_monitoramento != null)
+        if (_monitoramento != null || _iniciandoMonitoramento)
         {
             return;
         }
 
-        string caminhoPasta =
-            PastaMonitoradaTextBox.Text;
+        _iniciandoMonitoramento = true;
+
+        string caminhoPasta = PastaMonitoradaTextBox.Text;
+
+        _viewModel.Status = "🟡 Preparando monitoramento...";
+        _viewModel.Mensagem = "Organizando arquivos existentes...";
 
         try
         {
-            // Organiza os arquivos que já estão na pasta.
-            int quantidadeInicial =
-                _organizador.OrganizarPasta(caminhoPasta);
+            // Executa a organização fora da UI thread.
+            int quantidadeInicial = await Task.Run(
+                () => _organizador.OrganizarPasta(caminhoPasta));
 
-            _viewModel.ArquivosOrganizados =
-                quantidadeInicial;
+            _viewModel.ArquivosOrganizados = quantidadeInicial;
 
-            // Cria o logger específico do monitoramento.
             ILogger<MonitoramentoService> loggerMonitoramento =
                 _loggerFactory.CreateLogger<MonitoramentoService>();
 
@@ -120,22 +121,21 @@ public partial class MainWindow : Window
             _monitoramento.ArquivoOrganizado += AtualizarContador;
             _monitoramento.Mensagem += ExibirMensagem;
 
-            _viewModel.Status =
-                "🟢 Monitoramento ativo";
-
-            _viewModel.Mensagem =
-                "Monitoramento iniciado com sucesso.";
+            _viewModel.Status = "🟢 Monitoramento ativo";
+            _viewModel.Mensagem = "Monitoramento iniciado com sucesso.";
         }
         catch (Exception ex)
         {
             _monitoramento?.Dispose();
             _monitoramento = null;
 
-            _viewModel.Status =
-                "🔴 Monitoramento parado";
-
+            _viewModel.Status = "🔴 Monitoramento parado";
             _viewModel.Mensagem =
                 $"Erro ao iniciar o monitoramento: {ex.Message}";
+        }
+        finally
+        {
+            _iniciandoMonitoramento = false;
         }
     }
 
