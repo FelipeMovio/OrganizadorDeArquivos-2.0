@@ -6,6 +6,7 @@ using OrganizadorDePasta_2._0.Models;
 using OrganizadorDePasta_2._0.Repository;
 using OrganizadorDePasta_2._0.Service;
 using OrganizadorDePasta_2._0.ViewModels;
+using System.Threading.Tasks;
 using System.Windows;
 
 namespace OrganizadorDePasta_2._0;
@@ -13,6 +14,7 @@ namespace OrganizadorDePasta_2._0;
 public partial class MainWindow : Window
 {
     private bool _iniciandoMonitoramento;
+
     private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MainViewModel _viewModel;
@@ -21,11 +23,13 @@ public partial class MainWindow : Window
 
     private MonitoramentoService? _monitoramento;
 
-    public MainWindow(IDbContextFactory<OrganizadorDbContext> dbContextFactory)
-    { 
+    public MainWindow(
+        IDbContextFactory<OrganizadorDbContext> dbContextFactory)
+    {
         InitializeComponent();
 
         _dbContextFactory = dbContextFactory;
+
         // Configura os logs para aparecerem na janela Saída do Visual Studio.
         _loggerFactory = LoggerFactory.Create(builder =>
         {
@@ -74,14 +78,13 @@ public partial class MainWindow : Window
 
         if (dialog.ShowDialog() == true)
         {
-            PastaMonitoradaTextBox.Text =
-                dialog.FolderName;
+            PastaMonitoradaTextBox.Text = dialog.FolderName;
         }
     }
 
     private async void IniciarMonitoramento_Click(
-     object sender,
-     RoutedEventArgs e)
+        object sender,
+        RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(PastaMonitoradaTextBox.Text))
         {
@@ -153,11 +156,19 @@ public partial class MainWindow : Window
 
         ZerarContador();
 
-        _viewModel.Status =
-            "🔴 Monitoramento parado";
+        _viewModel.Status = "🔴 Monitoramento parado";
+        _viewModel.Mensagem = "Monitoramento encerrado.";
+    }
 
-        _viewModel.Mensagem =
-            "Monitoramento encerrado.";
+    private void Window_StateChanged(
+        object? sender,
+        EventArgs e)
+    {
+        if (WindowState == WindowState.Minimized)
+        {
+            // Na próxima etapa, vamos ocultar a janela
+            // e mantê-la acessível pela System Tray.
+        }
     }
 
     protected override void OnClosed(EventArgs e)
