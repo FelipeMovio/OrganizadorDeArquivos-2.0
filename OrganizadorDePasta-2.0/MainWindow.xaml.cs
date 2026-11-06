@@ -8,7 +8,7 @@ using OrganizadorDePasta_2._0.Service;
 using OrganizadorDePasta_2._0.ViewModels;
 using System.Threading.Tasks;
 using System.Windows;
-
+using MessageBox = System.Windows.MessageBox;
 namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
