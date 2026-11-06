@@ -14,7 +14,8 @@ namespace OrganizadorDePasta_2._0;
 public partial class MainWindow : Window
 {
     private bool _iniciandoMonitoramento;
-
+    private System.Windows.Forms.NotifyIcon? _notifyIcon;
+    private bool _encerrandoAplicacao;
     private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MainViewModel _viewModel;
@@ -201,5 +202,48 @@ public partial class MainWindow : Window
         {
             _viewModel.Mensagem = mensagem;
         });
+    }
+    private void ConfigurarSystemTray()
+    {
+        var menu = new System.Windows.Forms.ContextMenuStrip();
+
+        var abrirItem = new System.Windows.Forms.ToolStripMenuItem("Abrir");
+        abrirItem.Click += (_, _) => AbrirJanela();
+
+        var configuracoesItem =
+            new System.Windows.Forms.ToolStripMenuItem("Configurações");
+
+        configuracoesItem.Click += (_, _) => AbrirJanela();
+
+        var sairItem = new System.Windows.Forms.ToolStripMenuItem("Sair");
+        sairItem.Click += (_, _) =>
+        {
+            _encerrandoAplicacao = true;
+            Close();
+        };
+
+        menu.Items.Add(abrirItem);
+        menu.Items.Add(configuracoesItem);
+        menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
+        menu.Items.Add(sairItem);
+
+        _notifyIcon = new System.Windows.Forms.NotifyIcon
+        {
+            Icon = System.Drawing.SystemIcons.Application,
+            Text = "Organizador de Pasta",
+            ContextMenuStrip = menu,
+            Visible = true
+        };
+
+        _notifyIcon.DoubleClick += (_, _) => AbrirJanela();
+    }
+    private void AbrirJanela()
+    {
+        Show();
+
+        ShowInTaskbar = true;
+        WindowState = WindowState.Normal;
+
+        Activate();
     }
 }
