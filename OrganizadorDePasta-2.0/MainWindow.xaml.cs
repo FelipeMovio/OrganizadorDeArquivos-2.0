@@ -28,6 +28,7 @@ public partial class MainWindow : Window
         IDbContextFactory<OrganizadorDbContext> dbContextFactory)
     {
         InitializeComponent();
+        ConfigurarSystemTray();
 
         _dbContextFactory = dbContextFactory;
 
@@ -167,16 +168,36 @@ public partial class MainWindow : Window
     {
         if (WindowState == WindowState.Minimized)
         {
-            // Na próxima etapa, vamos ocultar a janela
-            // e mantê-la acessível pela System Tray.
+            Hide();
+            ShowInTaskbar = false;
         }
+    }
+
+    protected override void OnClosing(
+    System.ComponentModel.CancelEventArgs e)
+    {
+        if (!_encerrandoAplicacao)
+        {
+            e.Cancel = true;
+
+            Hide();
+            ShowInTaskbar = false;
+        }
+
+        base.OnClosing(e);
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        // Encerra o monitoramento antes de liberar os loggers.
         _monitoramento?.Dispose();
         _monitoramento = null;
+
+        if (_notifyIcon != null)
+        {
+            _notifyIcon.Visible = false;
+            _notifyIcon.Dispose();
+            _notifyIcon = null;
+        }
 
         _loggerFactory.Dispose();
 
