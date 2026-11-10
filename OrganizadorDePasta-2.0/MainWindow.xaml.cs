@@ -9,13 +9,17 @@ using OrganizadorDePasta_2._0.ViewModels;
 using System.Threading.Tasks;
 using System.Windows;
 using MessageBox = System.Windows.MessageBox;
+
 namespace OrganizadorDePasta_2._0;
 
 public partial class MainWindow : Window
 {
     private bool _iniciandoMonitoramento;
     private System.Windows.Forms.NotifyIcon? _notifyIcon;
+    private System.Windows.Forms.ToolStripMenuItem? _pausarRetomarItem;
+
     private bool _encerrandoAplicacao;
+
     private readonly IDbContextFactory<OrganizadorDbContext> _dbContextFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly MainViewModel _viewModel;
@@ -92,6 +96,7 @@ public partial class MainWindow : Window
         {
             _viewModel.Mensagem =
                 "Selecione uma pasta antes de iniciar o monitoramento.";
+
             return;
         }
 
@@ -126,6 +131,8 @@ public partial class MainWindow : Window
             _monitoramento.ArquivoOrganizado += AtualizarContador;
             _monitoramento.Mensagem += ExibirMensagem;
 
+            AtualizarMenuPausa(true);
+
             _viewModel.Status = "🟢 Monitoramento ativo";
             _viewModel.Mensagem = "Monitoramento iniciado com sucesso.";
         }
@@ -133,6 +140,8 @@ public partial class MainWindow : Window
         {
             _monitoramento?.Dispose();
             _monitoramento = null;
+
+            AtualizarMenuPausa(false);
 
             _viewModel.Status = "🔴 Monitoramento parado";
             _viewModel.Mensagem =
@@ -156,10 +165,60 @@ public partial class MainWindow : Window
         _monitoramento.Dispose();
         _monitoramento = null;
 
+        AtualizarMenuPausa(false);
+
         ZerarContador();
 
         _viewModel.Status = "🔴 Monitoramento parado";
         _viewModel.Mensagem = "Monitoramento encerrado.";
+    }
+
+    private void AlternarPausaMonitoramento()
+    {
+        Dispatcher.Invoke(() =>
+        {
+            if (_monitoramento == null)
+            {
+                return;
+            }
+
+            if (_monitoramento.EstaPausado)
+            {
+                _monitoramento.Retomar();
+
+                _viewModel.Status = "🟢 Monitoramento ativo";
+                _viewModel.Mensagem = "Monitoramento retomado.";
+            }
+            else
+            {
+                _monitoramento.Pausar();
+
+                _viewModel.Status = "🟡 Monitoramento pausado";
+                _viewModel.Mensagem = "Monitoramento pausado.";
+            }
+
+            AtualizarMenuPausa(true);
+        });
+    }
+
+    private void AtualizarMenuPausa(bool habilitado)
+    {
+        if (_pausarRetomarItem == null)
+        {
+            return;
+        }
+
+        _pausarRetomarItem.Enabled = habilitado;
+
+        if (!habilitado || _monitoramento == null)
+        {
+            _pausarRetomarItem.Text = "Pausar monitoramento";
+            return;
+        }
+
+        _pausarRetomarItem.Text = _monitoramento.EstaPausado
+            ? "Retomar monitoramento"
+            : "Pausar monitoramento";
     }
 
     private void Window_StateChanged(
@@ -174,7 +233,7 @@ public partial class MainWindow : Window
     }
 
     protected override void OnClosing(
-    System.ComponentModel.CancelEventArgs e)
+        System.ComponentModel.CancelEventArgs e)
     {
         if (!_encerrandoAplicacao)
         {
@@ -224,19 +283,33 @@ public partial class MainWindow : Window
             _viewModel.Mensagem = mensagem;
         });
     }
+
     private void ConfigurarSystemTray()
     {
         var menu = new System.Windows.Forms.ContextMenuStrip();
 
-        var abrirItem = new System.Windows.Forms.ToolStripMenuItem("Abrir");
+        var abrirItem =
+            new System.Windows.Forms.ToolStripMenuItem("Abrir");
+
         abrirItem.Click += (_, _) => AbrirJanela();
+
+        _pausarRetomarItem =
+            new System.Windows.Forms.ToolStripMenuItem("Pausar monitoramento")
+            {
+                Enabled = false
+            };
+
+        _pausarRetomarItem.Click += (_, _) =>
+            AlternarPausaMonitoramento();
 
         var configuracoesItem =
             new System.Windows.Forms.ToolStripMenuItem("Configurações");
 
         configuracoesItem.Click += (_, _) => AbrirJanela();
 
-        var sairItem = new System.Windows.Forms.ToolStripMenuItem("Sair");
+        var sairItem =
+            new System.Windows.Forms.ToolStripMenuItem("Sair");
+
         sairItem.Click += (_, _) =>
         {
             _encerrandoAplicacao = true;
@@ -244,6 +317,7 @@ public partial class MainWindow : Window
         };
 
         menu.Items.Add(abrirItem);
+        menu.Items.Add(_pausarRetomarItem);
         menu.Items.Add(configuracoesItem);
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add(sairItem);
@@ -258,6 +332,7 @@ public partial class MainWindow : Window
 
         _notifyIcon.DoubleClick += (_, _) => AbrirJanela();
     }
+
     private void AbrirJanela()
     {
         Show();
