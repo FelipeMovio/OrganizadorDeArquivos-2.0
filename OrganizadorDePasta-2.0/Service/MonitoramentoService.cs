@@ -19,9 +19,21 @@ public class MonitoramentoService : IDisposable
     private readonly string _caminhoPasta;
 
     private bool _disposed;
+    private bool _pausado;
 
     public event Action? ArquivoOrganizado;
     public event Action<string>? Mensagem;
+
+    public bool EstaPausado
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _pausado;
+            }
+        }
+    }
 
     public MonitoramentoService(
         OrganizadorService organizadorService,
@@ -59,6 +71,42 @@ public class MonitoramentoService : IDisposable
 
         _logger.LogInformation(
             "Monitoramento iniciado na pasta {CaminhoPasta}.",
+            _caminhoPasta);
+    }
+
+    public void Pausar()
+    {
+        lock (_lock)
+        {
+            if (_disposed || _pausado)
+            {
+                return;
+            }
+
+            _pausado = true;
+            _watcher.EnableRaisingEvents = false;
+        }
+
+        _logger.LogInformation(
+            "Monitoramento pausado na pasta {CaminhoPasta}.",
+            _caminhoPasta);
+    }
+
+    public void Retomar()
+    {
+        lock (_lock)
+        {
+            if (_disposed || !_pausado)
+            {
+                return;
+            }
+
+            _pausado = false;
+            _watcher.EnableRaisingEvents = true;
+        }
+
+        _logger.LogInformation(
+            "Monitoramento retomado na pasta {CaminhoPasta}.",
             _caminhoPasta);
     }
 
@@ -126,7 +174,7 @@ public class MonitoramentoService : IDisposable
 
         lock (_lock)
         {
-            if (_disposed)
+            if (_disposed || _pausado)
             {
                 return;
             }
@@ -145,7 +193,6 @@ public class MonitoramentoService : IDisposable
         {
             try
             {
-                // Dá tempo para o arquivo terminar de ser gravado.
                 await Task.Delay(TempoEspera);
 
                 OrganizarComRetry(caminhoArquivo);
