@@ -96,23 +96,25 @@ public class MonitoramentoService : IDisposable
     {
         lock (_lock)
         {
-            if (_disposed || !_pausado) return;
+            if (_disposed || !_pausado)
+                return;
 
-            _logger.LogInformation("Retomando monitoramento...");
+            _logger.LogInformation("Recriando monitoramento...");
 
-            _pausado = false;
+            _watcher.EnableRaisingEvents = false;
+
             _watcher.EnableRaisingEvents = true;
 
+            _pausado = false;
+
             _logger.LogInformation(
-                "Watcher ativo: {Estado}",
-                _watcher.EnableRaisingEvents
-            );
+                "Watcher reativado: {Estado}",
+                _watcher.EnableRaisingEvents);
         }
 
         _logger.LogInformation(
             "Monitoramento retomado na pasta {CaminhoPasta}.",
-            _caminhoPasta
-        );
+            _caminhoPasta);
     }
 
     private void ArquivoCriado(object sender, FileSystemEventArgs e)
