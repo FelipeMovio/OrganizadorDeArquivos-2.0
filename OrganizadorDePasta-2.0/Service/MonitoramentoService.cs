@@ -97,24 +97,59 @@ public class MonitoramentoService : IDisposable
         lock (_lock)
         {
             if (_disposed || !_pausado)
+            {
                 return;
-
-            _logger.LogInformation("Recriando monitoramento...");
-
-            _watcher.EnableRaisingEvents = false;
-
-            _watcher.EnableRaisingEvents = true;
+            }
 
             _pausado = false;
-
-            _logger.LogInformation(
-                "Watcher reativado: {Estado}",
-                _watcher.EnableRaisingEvents);
+            _watcher.EnableRaisingEvents = true;
         }
 
         _logger.LogInformation(
             "Monitoramento retomado na pasta {CaminhoPasta}.",
             _caminhoPasta);
+
+        // Verifica os arquivos que surgiram durante a pausa
+        // e também os demais que ainda estão na pasta principal.
+        ProcessarArquivosExistentes();
+    }
+    private void ProcessarArquivosExistentes()
+    {
+        try
+        {
+            _logger.LogInformation(
+                "Iniciando varredura da pasta {CaminhoPasta}.",
+                _caminhoPasta);
+
+            string[] arquivos = Directory.GetFiles(_caminhoPasta);
+
+            _logger.LogInformation(
+                "Foram encontrados {Quantidade} arquivos na pasta.",
+                arquivos.Length);
+
+            foreach (string arquivo in arquivos)
+            {
+                if (DeveIgnorarArquivo(arquivo))
+                {
+                    continue;
+                }
+
+                ProcessarArquivo(arquivo);
+            }
+
+            _logger.LogInformation(
+                "Varredura da pasta concluída.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Erro ao realizar a varredura da pasta {CaminhoPasta}.",
+                _caminhoPasta);
+
+            Notificar(
+                "Ocorreu um erro ao verificar os arquivos da pasta.");
+        }
     }
 
     private void ArquivoCriado(object sender, FileSystemEventArgs e)
