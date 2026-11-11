@@ -96,26 +96,29 @@ public class MonitoramentoService : IDisposable
     {
         lock (_lock)
         {
-            if (_disposed || !_pausado)
-            {
-                return;
-            }
+            if (_disposed || !_pausado) return;
+
+            _logger.LogInformation("Retomando monitoramento...");
 
             _pausado = false;
             _watcher.EnableRaisingEvents = true;
+
+            _logger.LogInformation(
+                "Watcher ativo: {Estado}",
+                _watcher.EnableRaisingEvents
+            );
         }
 
         _logger.LogInformation(
             "Monitoramento retomado na pasta {CaminhoPasta}.",
-            _caminhoPasta);
+            _caminhoPasta
+        );
     }
 
-    private void ArquivoCriado(
-        object sender,
-        FileSystemEventArgs e)
+    private void ArquivoCriado(object sender, FileSystemEventArgs e)
     {
-        _logger.LogDebug(
-            "Evento de criação detectado para {CaminhoArquivo}.",
+        _logger.LogInformation(
+            "EVENTO CREATED RECEBIDO: {CaminhoArquivo}.",
             e.FullPath);
 
         if (DeveIgnorarArquivo(e.FullPath))
@@ -130,6 +133,9 @@ public class MonitoramentoService : IDisposable
         object sender,
         RenamedEventArgs e)
     {
+        _logger.LogInformation(
+    "EVENTO RENAMED RECEBIDO: {CaminhoArquivo}.",
+    e.FullPath);
         _logger.LogDebug(
             "Arquivo renomeado de {Origem} para {Destino}.",
             e.OldFullPath,
@@ -163,6 +169,9 @@ public class MonitoramentoService : IDisposable
 
     private void ProcessarArquivo(string caminhoArquivo)
     {
+        _logger.LogInformation(
+    "Iniciando processamento: {CaminhoArquivo}.",
+    caminhoArquivo);
         if (Directory.Exists(caminhoArquivo))
         {
             _logger.LogDebug(
