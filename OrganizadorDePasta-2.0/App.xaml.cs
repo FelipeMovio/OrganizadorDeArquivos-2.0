@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using OrganizadorDePasta_2._0.Repository;
 using System.Windows;
+using Application = System.Windows.Application;
 
 namespace OrganizadorDePasta_2._0;
 

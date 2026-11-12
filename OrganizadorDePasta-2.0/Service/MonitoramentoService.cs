@@ -19,9 +19,21 @@ public class MonitoramentoService : IDisposable
     private readonly string _caminhoPasta;
 
     private bool _disposed;
+    private bool _pausado;
 
     public event Action? ArquivoOrganizado;
     public event Action<string>? Mensagem;
+
+    public bool EstaPausado
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return _pausado;
+            }
+        }
+    }
 
     public MonitoramentoService(
         OrganizadorService organizadorService,
@@ -62,12 +74,88 @@ public class MonitoramentoService : IDisposable
             _caminhoPasta);
     }
 
-    private void ArquivoCriado(
-        object sender,
-        FileSystemEventArgs e)
+    public void Pausar()
     {
-        _logger.LogDebug(
-            "Evento de criação detectado para {CaminhoArquivo}.",
+        lock (_lock)
+        {
+            if (_disposed || _pausado)
+            {
+                return;
+            }
+
+            _pausado = true;
+            _watcher.EnableRaisingEvents = false;
+        }
+
+        _logger.LogInformation(
+            "Monitoramento pausado na pasta {CaminhoPasta}.",
+            _caminhoPasta);
+    }
+
+    public void Retomar()
+    {
+        lock (_lock)
+        {
+            if (_disposed || !_pausado)
+            {
+                return;
+            }
+
+            _pausado = false;
+            _watcher.EnableRaisingEvents = true;
+        }
+
+        _logger.LogInformation(
+            "Monitoramento retomado na pasta {CaminhoPasta}.",
+            _caminhoPasta);
+
+        // Verifica os arquivos que surgiram durante a pausa
+        // e também os demais que ainda estão na pasta principal.
+        ProcessarArquivosExistentes();
+    }
+    private void ProcessarArquivosExistentes()
+    {
+        try
+        {
+            _logger.LogInformation(
+                "Iniciando varredura da pasta {CaminhoPasta}.",
+                _caminhoPasta);
+
+            string[] arquivos = Directory.GetFiles(_caminhoPasta);
+
+            _logger.LogInformation(
+                "Foram encontrados {Quantidade} arquivos na pasta.",
+                arquivos.Length);
+
+            foreach (string arquivo in arquivos)
+            {
+                if (DeveIgnorarArquivo(arquivo))
+                {
+                    continue;
+                }
+
+                ProcessarArquivo(arquivo);
+            }
+
+            _logger.LogInformation(
+                "Varredura da pasta concluída.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Erro ao realizar a varredura da pasta {CaminhoPasta}.",
+                _caminhoPasta);
+
+            Notificar(
+                "Ocorreu um erro ao verificar os arquivos da pasta.");
+        }
+    }
+
+    private void ArquivoCriado(object sender, FileSystemEventArgs e)
+    {
+        _logger.LogInformation(
+            "EVENTO CREATED RECEBIDO: {CaminhoArquivo}.",
             e.FullPath);
 
         if (DeveIgnorarArquivo(e.FullPath))
@@ -82,6 +170,9 @@ public class MonitoramentoService : IDisposable
         object sender,
         RenamedEventArgs e)
     {
+        _logger.LogInformation(
+    "EVENTO RENAMED RECEBIDO: {CaminhoArquivo}.",
+    e.FullPath);
         _logger.LogDebug(
             "Arquivo renomeado de {Origem} para {Destino}.",
             e.OldFullPath,
@@ -115,6 +206,9 @@ public class MonitoramentoService : IDisposable
 
     private void ProcessarArquivo(string caminhoArquivo)
     {
+        _logger.LogInformation(
+    "Iniciando processamento: {CaminhoArquivo}.",
+    caminhoArquivo);
         if (Directory.Exists(caminhoArquivo))
         {
             _logger.LogDebug(
@@ -126,7 +220,7 @@ public class MonitoramentoService : IDisposable
 
         lock (_lock)
         {
-            if (_disposed)
+            if (_disposed || _pausado)
             {
                 return;
             }
@@ -145,7 +239,6 @@ public class MonitoramentoService : IDisposable
         {
             try
             {
-                // Dá tempo para o arquivo terminar de ser gravado.
                 await Task.Delay(TempoEspera);
 
                 OrganizarComRetry(caminhoArquivo);
